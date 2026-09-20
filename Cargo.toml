@@ -13,5 +13,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 console_error_panic_hook = "0.1.7"
 
+# 构建期读素材清单（只在编译时用，不进 wasm 产物）
+[build-dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+
 [workspace]
 members = ["src-tauri"]

@@ -1,70 +1,27 @@
-//! 随包素材表（纯数据，不依赖 UI/存储，可被独立编译测试）。
+//! 随包素材表：内容由 `build.rs` 从 `assets/materials/manifest.toml` 生成后嵌入。
 //!
-//! 正文是 `assets/materials/*.txt`，由 `include_str!` 在编译期嵌进二进制。
-//! 加素材 = 往 `assets/materials/` 丢一个 txt，再在 `BUNDLED` 里补一行；
-//! 正文改动会被 cargo 的依赖追踪捕获，重新编译即可，运行时不需要读文件或发请求。
+//! 加素材 = 往 `assets/materials/` 丢一个 txt，再在 `manifest.toml` 里补一段。
+//! 清单问题（文件缺失、语言非法、id/显示名重复、正文为空、英文素材含非 ASCII）
+//! 会在构建期直接失败，正文用 `include_str!` 内嵌，运行期不读文件。
 
-use crate::lessons::Lang;
-
-/// `(id, 显示名, 语言, 正文)`
-pub const BUNDLED: &[(&str, &str, Lang, &str)] = &[
-    (
-        "bundled-en-typing",
-        "英文 · 打字要点",
-        Lang::En,
-        include_str!("../assets/materials/en-typing.txt"),
-    ),
-    (
-        "bundled-en-numbers",
-        "英文 · 数字与符号密集",
-        Lang::En,
-        include_str!("../assets/materials/en-numbers.txt"),
-    ),
-    (
-        "bundled-en-pangram",
-        "英文 · 字母全覆盖句子",
-        Lang::En,
-        include_str!("../assets/materials/en-pangram.txt"),
-    ),
-    (
-        "bundled-zh-typing",
-        "中文 · 打字要点",
-        Lang::Zh,
-        include_str!("../assets/materials/zh-typing.txt"),
-    ),
-    (
-        "bundled-zh-essay",
-        "中文 · 散文片段",
-        Lang::Zh,
-        include_str!("../assets/materials/zh-essay.txt"),
-    ),
-    (
-        "bundled-zh-shuangpin",
-        "中文 · 双拼常用词",
-        Lang::Zh,
-        include_str!("../assets/materials/zh-shuangpin.txt"),
-    ),
-];
+include!(concat!(env!("OUT_DIR"), "/bundled_materials.rs"));
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::BUNDLED;
+    use crate::lessons::Lang;
 
-    /// 素材必须「打得出来」：英文素材只能有可打印 ASCII（美式键盘能敲的字符），
-    /// 中文素材不能有 ASCII 字母数字（中文输入法下字母会变成拼音，打不出字母）。
+    /// 英文素材只能是可打印 ASCII（美式键盘敲得出来）；
+    /// 中文素材允许夹英文——中文输入法下可以用英文模式或回车直接提交字母，所以不设限。
     #[test]
     fn bundled_texts_are_typeable() {
         for (id, name, lang, text) in BUNDLED {
             assert!(!text.trim().is_empty(), "{id}（{name}）是空素材");
-            match lang {
-                Lang::En => assert!(
-                    text.chars().all(|c| c.is_ascii()),
-                    "{id}（{name}）含非 ASCII 字符，键盘上打不出来"
-                ),
-                Lang::Zh => assert!(
-                    text.chars().all(|c| !c.is_ascii_alphanumeric()),
-                    "{id}（{name}）含 ASCII 字母数字，中文输入法下打不出来"
-                ),
+            if *lang == Lang::En {
+                assert!(
+                    text.is_ascii(),
+                    "{id}（{name}）含非 ASCII 字符，美式键盘上打不出来"
+                );
             }
         }
     }

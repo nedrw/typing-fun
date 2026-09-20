@@ -1,0 +1,46 @@
+# 随包素材清单：一段素材 = 一个 [[material]]。
+#
+#   id   稳定标识（成绩归档用），不要随意改
+#   name 菜单里显示的名字，同一语言内不能重名
+#   lang "en" 或 "zh"
+#   file 相对本目录的 txt 文件名
+#
+# 加素材 = 丢一个 txt + 在下面补一段。清单或正文有问题会在**构建期**报错：
+# 文件读不到、语言非法、id/显示名重复、正文为空、英文素材含非 ASCII 字符。
+# 中文素材允许出现英文（中文输入法下可以用英文模式或回车直接提交字母）。
+
+[[material]]
+id = "bundled-en-typing"
+name = "英文 · 打字要点"
+lang = "en"
+file = "en-typing.txt"
+
+[[material]]
+id = "bundled-en-numbers"
+name = "英文 · 数字与符号密集"
+lang = "en"
+file = "en-numbers.txt"
+
+[[material]]
+id = "bundled-en-pangram"
+name = "英文 · 字母全覆盖句子"
+lang = "en"
+file = "en-pangram.txt"
+
+[[material]]
+id = "bundled-zh-typing"
+name = "中文 · 打字要点"
+lang = "zh"
+file = "zh-typing.txt"
+
+[[material]]
+id = "bundled-zh-essay"
+name = "中文 · 散文片段"
+lang = "zh"
+file = "zh-essay.txt"
+
+[[material]]
+id = "bundled-zh-shuangpin"
+name = "中文 · 双拼常用词"
+lang = "zh"
+file = "zh-shuangpin.txt"
