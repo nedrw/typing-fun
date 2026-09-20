@@ -1,0 +1,40 @@
+Quarterly Report #4, FY2025
+
+Our revenue for Q3 was $1,284,590.75, up 18.4% from $1,085,120.30 a year ago. We shipped 27,480
+units, which is 3,912 more than planned, and cut costs by 6.5% while raising output by 12%.
+
+Budget & Spending
+Item 1: raw materials $42,180 (12.5% of total)
+Item 2: shipping & handling $3,905.20 (1.2%)
+Item 3: salaries for 34 staff $218,600 - bonuses $14,275 = $232,875
+Subtotal: 42,180 + 3,905.20 + 232,875 = $278,960.20
+Total with tax at 7.25%: $299,184.81
+
+Codes & Tags
+Order #A-1049 shipped on 09/14/2025 at 08:45. Batch codes: 77-K-3301, 88-Q-4102, 99-Z-5503. Ticket
+refs 2^10, 3^4, 5^3 (see appendix 6 and 7). Ratios 4:1, 16:2, 64:4 all stay under 100%!
+
+Quick Math
+7 + 8 = 15; 15 - 6 = 9; 9 * 9 = 81; 81 / 3 = 27; 2^8 = 256; 10^3 = 1000; (4 + 6) * 5 = 50;
+100% - 35% = 65%. Round 1: 3.14159 is about 3.14; Round 2: 2.71828 is about 2.72; Round 3: 1.61803
+is about 1.62.
+
+Kitchen Notes
+Preheat to 375 F. Mix 2 cups (480 ml) of water with 1.5 tsp salt and 3/4 cup sugar. Bake 22-25
+minutes at 180 C. Serves 4-6. Cost per serving: $2.35, or $11.75 for the whole tray.
+
+Schedule
+06:00 wake up; 07:30 commute on line 4, car 12; 09:00-12:30 meetings in 3 rooms with 18 people;
+13:00 lunch ($12.40); 15:45 call @ +1-555-0199; 18:20 gym for 45 minutes, 320 kcal; 21:10 read
+pages 180-215; 23:00 sleep.
+
+Ledger
+2025-01-07 | INV-0042 | $1,050.00
+2025-02-14 | INV-0088 | $2,375.50
+2025-03-21 | INV-0131 | $945.75
+Balance: $4,371.25 (#3 of 4 pages). File name: report_2025_q3.txt. Footnotes (*, **, ***) explain
+the 5 assumptions.
+
+Notes
+Please confirm by 5:30 PM (UTC-8) on 12/31/2025, no later! Send to unit-7@example.com or call
+555-0142 ext. 9. Quote ref: INV2025#7788! Discount codes: SAVE10%, SAVE15%, SAVE20% and NEW25%.

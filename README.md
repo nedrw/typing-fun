@@ -22,29 +22,32 @@ trunk serve --open       # 只在浏览器里跑（http://localhost:1420）
 
 ## 素材
 
-- 随包素材在 `assets/materials/`：一个 txt 一段，清单文件 `manifest.txt` 每行 `<语言 en|zh>|<显示名>|<文件名>`；`#` 开头与空行忽略
-- 加素材：往目录里丢 txt，再补一行清单，重新构建
+- 随包素材：正文是 `assets/materials/*.txt`，元数据（显示名、语言）放在 `src/materials.rs` 的 `BUNDLED` 常量表里，正文用 `include_str!` 在**编译期**嵌进二进制——运行时不读文件、不发请求
+- 加素材：往 `assets/materials/` 丢一个 txt，在 `BUNDLED` 里补一行；正文改动会被 cargo 的依赖追踪捕获，重新编译即可
 - App 内也可以「导入 .txt（可多选）」或「粘贴文本新建」；这些存 localStorage，并**按内容自动归入中文/英文**
 - 练习与测试都从素材里随机截取片段：中文按字切，英文对齐词边界
+- 素材要“能打得出来”才能练：英文素材（`en-*.txt`）只应包含可打印 ASCII——
+  `LC_ALL=C grep -n '[^ -~]' assets/materials/en-*.txt` 应无输出；
+  中文素材（`zh-*.txt`）不应包含 ASCII 字母数字（中文输入法下字母会变成拼音）——
+  `grep -n '[A-Za-z0-9]' assets/materials/zh-*.txt` 应无输出
 
 ## 代码结构
 
-| 模块                           | 作用                                              |
-| ------------------------------ | ------------------------------------------------- |
-| `src/engine.rs`                | 英文引擎：逐击键判定、退格、计时、净速度与正确率  |
-| `src/cn_engine.rs`             | 中文引擎：缓冲区比对，按提交字符判定              |
-| `src/session.rs`               | 两种引擎的统一读写接口                            |
-| `src/lessons.rs`               | 课程表与分组、练习文本生成                        |
-| `src/layout.rs`                | 键位 → 手指 / 左右手映射，上档符号归一化          |
-| `src/shuangpin.rs`             | 小鹤双拼键位表                                    |
-| `src/materials.rs`             | 素材：随包加载（fetch）+ 用户素材（localStorage） |
-| `src/manifest.rs`              | 素材清单解析                                      |
-| `src/segment.rs`               | 随机片段截取、按内容判断素材语言                  |
-| `src/rng.rs`                   | 确定性伪随机（xorshift64）                        |
-| `src/storage.rs`               | 成绩记录（localStorage）                          |
-| `src/progress.rs`              | 趋势线坐标计算                                    |
-| `src/app.rs`                   | 应用外壳：路由、菜单、键盘/鼠标游标、练习与结算   |
-| `src/keyboard.rs` `src/dom.rs` | 虚拟键盘视图、定时器与全局键盘监听                |
+| 模块                           | 作用                                                            |
+| ------------------------------ | --------------------------------------------------------------- |
+| `src/engine.rs`                | 英文引擎：逐击键判定、退格、计时、净速度与正确率                |
+| `src/cn_engine.rs`             | 中文引擎：缓冲区比对，按提交字符判定                            |
+| `src/session.rs`               | 两种引擎的统一读写接口                                          |
+| `src/lessons.rs`               | 课程表与分组、练习文本生成                                      |
+| `src/layout.rs`                | 键位 → 手指 / 左右手映射，上档符号归一化                        |
+| `src/shuangpin.rs`             | 小鹤双拼键位表                                                  |
+| `src/materials.rs`             | 素材：随包素材（`include_str!` 内嵌）+ 用户素材（localStorage） |
+| `src/segment.rs`               | 随机片段截取、按内容判断素材语言                                |
+| `src/rng.rs`                   | 确定性伪随机（xorshift64）                                      |
+| `src/storage.rs`               | 成绩记录（localStorage）                                        |
+| `src/progress.rs`              | 趋势线坐标计算                                                  |
+| `src/app.rs`                   | 应用外壳：路由、菜单、键盘/鼠标游标、练习与结算                 |
+| `src/keyboard.rs` `src/dom.rs` | 虚拟键盘视图、定时器与全局键盘监听                              |
 
 ## 已知取舍
 

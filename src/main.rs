@@ -1,4 +1,5 @@
 mod app;
+mod bundled;
 mod cn_engine;
 mod dom;
 mod engine;
@@ -6,7 +7,6 @@ mod history;
 mod keyboard;
 mod layout;
 mod lessons;
-mod manifest;
 mod materials;
 mod model;
 mod progress;

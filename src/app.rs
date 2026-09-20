@@ -4,7 +4,6 @@
 //! ↑↓ 移动、Enter 进入、数字键直达、Esc 回上一层、←→/Tab 切换语言。
 
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 use wasm_bindgen::prelude::*;
 
 use crate::dom::{KeyListener, Ticker};
@@ -205,11 +204,10 @@ pub fn App() -> impl IntoView {
     let test_limit = RwSignal::new(None::<u32>);
     let shuangpin_mode = RwSignal::new(false);
     let records = RwSignal::new(storage::load());
-    let bundled_materials = RwSignal::new(Vec::<Material>::new());
     let user_materials = RwSignal::new(materials::load());
-    // 随包素材 + 用户素材合成一份，只在两者变化时重算，渲染时不重建池子
+    // 随包素材（编译期内嵌）+ 用户素材合成一份，只在用户素材变化时重算，渲染时不重建池子
     let all_materials = Memo::new(move |_| {
-        let mut all = bundled_materials.get();
+        let mut all = materials::bundled();
         all.extend(user_materials.get());
         all
     });
@@ -224,11 +222,6 @@ pub fn App() -> impl IntoView {
     let stats = Memo::new(move |_| session.with(|s| s.stats(now.get())));
     let session_lang = move || source.with(|s| s.lang());
     let is_zh = move || session_lang() == Lang::Zh;
-
-    // 随包素材（assets/materials 下的 txt）异步读入
-    spawn_local(async move {
-        bundled_materials.set(materials::load_bundled().await);
-    });
 
     // ---------- 中文课：输入框是唯一输入通道 ----------
     let focus_input = move || {

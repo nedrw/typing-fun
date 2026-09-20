@@ -1,17 +1,14 @@
 //! 打字素材。
 //!
-//! - 随包分发的素材是 `assets/materials/` 下的 txt（清单见同目录 `manifest.txt`），
-//!   启动时 fetch 进来，只读
-//! - 用户素材（导入 txt / 粘贴新建）存 localStorage
+//! - 随包素材：正文内嵌在二进制里（见 `crate::bundled`），只读
+//! - 用户素材：导入 txt / 粘贴新建，存 localStorage
 //!
 //! 两者都是 `Material`，界面里合并成一个列表。
 
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::JsCast;
-use wasm_bindgen_futures::JsFuture;
 
+use crate::bundled;
 use crate::lessons::Lang;
-use crate::manifest;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Material {
@@ -31,8 +28,21 @@ impl Material {
     }
 }
 
+/// 构建一份随包素材列表。
+pub fn bundled() -> Vec<Material> {
+    bundled::BUNDLED
+        .iter()
+        .map(|(id, name, lang, text)| Material {
+            id: (*id).to_string(),
+            name: (*name).to_string(),
+            lang: *lang,
+            text: (*text).to_string(),
+            bundled: true,
+        })
+        .collect()
+}
+
 const USER_KEY: &str = "typing-fun.materials.v1";
-const BUNDLE_DIR: &str = "assets/materials";
 
 fn storage() -> Option<web_sys::Storage> {
     web_sys::window()?.local_storage().ok().flatten()
@@ -67,41 +77,4 @@ pub fn remove(id: &str) -> Vec<Material> {
     let all: Vec<Material> = load().into_iter().filter(|m| m.id != id).collect();
     save(&all);
     all
-}
-
-/// 读随包素材：先取清单，再逐个读 txt。读不到就返回空表（不影响用户素材）。
-pub async fn load_bundled() -> Vec<Material> {
-    let Some(manifest_text) = fetch_text(&format!("{BUNDLE_DIR}/manifest.txt")).await else {
-        return Vec::new();
-    };
-    let mut materials = Vec::new();
-    for entry in manifest::parse(&manifest_text) {
-        let url = format!("{BUNDLE_DIR}/{}", entry.file);
-        let Some(text) = fetch_text(&url).await else {
-            continue;
-        };
-        if text.trim().is_empty() {
-            continue;
-        }
-        materials.push(Material {
-            id: format!("bundled-{}", entry.file),
-            name: entry.name,
-            lang: entry.lang,
-            text,
-            bundled: true,
-        });
-    }
-    materials
-}
-
-async fn fetch_text(url: &str) -> Option<String> {
-    let response = JsFuture::from(web_sys::window()?.fetch_with_str(url))
-        .await
-        .ok()?;
-    let response: web_sys::Response = response.dyn_into().ok()?;
-    if !response.ok() {
-        return None;
-    }
-    let text = JsFuture::from(response.text().ok()?).await.ok()?;
-    text.as_string()
 }
