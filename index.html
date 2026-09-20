@@ -4,7 +4,16 @@
         <meta charset="utf-8" />
         <title>TT 打字训练</title>
         <link data-trunk rel="css" href="styles.css" />
-        <link data-trunk rel="rust" data-wasm-opt="z" />
+        <!--
+      wasm-opt 默认不放行 Rust 默认启用的 wasm 特性（bulk-memory / nontrapping-fptoint /
+      sign-ext / mutable-globals），release 构建里不显式 --enable-* 会直接失败。
+    -->
+        <link
+            data-trunk
+            rel="rust"
+            data-wasm-opt="z"
+            data-wasm-opt-params="--enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals"
+        />
     </head>
     <body></body>
 </html>
