@@ -20,3 +20,12 @@ toml = "0.8"
 
 [workspace]
 members = ["src-tauri"]
+
+# release 优化：profile 必须声明在 workspace 根，写在成员包里会被忽略
+# （同时作用于 wasm 前端与桌面壳）
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
