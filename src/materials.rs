@@ -64,10 +64,20 @@ fn save(all: &[Material]) {
     }
 }
 
-/// 追加一条用户素材，返回追加后的全部用户素材。
-pub fn push(material: Material) -> Vec<Material> {
+/// 添加用户素材：同语言下重名的会被覆盖，方便重复导入同一份 txt。
+/// 随包素材不在这里（它们编译期内嵌），所以覆盖不到、也删不掉。
+pub fn upsert(material: Material) -> Vec<Material> {
     let mut all = load();
-    all.push(material);
+    match all
+        .iter_mut()
+        .find(|m| m.name == material.name && m.lang == material.lang)
+    {
+        Some(existing) => {
+            existing.text = material.text;
+            existing.bundled = false;
+        }
+        None => all.push(material),
+    }
     save(&all);
     all
 }

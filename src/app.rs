@@ -429,7 +429,7 @@ pub fn App() -> impl IntoView {
                 }
                 // 按内容归类，而不是按当前 tab：否则会出现「中文课里挂英文素材」这种打不出来的组合
                 let lang = detect_lang(&text);
-                user_materials.set(materials::push(Material {
+                user_materials.set(materials::upsert(Material {
                     id: user_material_id(),
                     name: name.clone(),
                     lang,
@@ -489,7 +489,7 @@ pub fn App() -> impl IntoView {
                 } else {
                     name
                 };
-                user_materials.set(materials::push(Material {
+                user_materials.set(materials::upsert(Material {
                     id: user_material_id(),
                     name,
                     lang,
@@ -592,12 +592,12 @@ pub fn App() -> impl IntoView {
                 let mut items = vec![
                     item(
                         "导入 .txt 文件",
-                        "可多选，按内容自动归入中文/英文",
+                        "可多选，按内容归入中文/英文；同名会覆盖",
                         Action::Import,
                     ),
                     item(
                         "粘贴文本新建",
-                        "手动写名字和正文",
+                        "手动写名字和正文，同名会覆盖",
                         Action::Go(Route::NewMaterial),
                     ),
                 ];
