@@ -1198,8 +1198,8 @@ pub fn App() -> impl IntoView {
 fn shuangpin_ref() -> impl IntoView {
     view! {
         <p class="sp-tip">
-            "小鹤双拼：声母取首字母（zh = v、ch = i、sh = u），韵母各占一个键；"
-            "零声母音节打「首字母 + 韵母键」。以你输入法里的方案为准。"
+            "小鹤双拼：声母除 zh → V、ch → I、sh → U 外，其余就是对应字母键；韵母一个占一个键。"
+            "零声母音节（安 an、爱 ai 等）通常把首字母当声母处理。以你输入法里的方案为准。"
         </p>
         <div class="sp-rows">
             {shuangpin::ROWS
@@ -1209,13 +1209,26 @@ fn shuangpin_ref() -> impl IntoView {
                         <div class="sp-row">
                             {row
                                 .chars()
-                                .map(|key| {
-                                    view! {
-                                        <span class="sp-key">
-                                            <b>{key.to_string()}</b>
-                                            <i>{shuangpin::yunmu(key).unwrap_or("").to_string()}</i>
-                                        </span>
+                                .map(|key| match shuangpin::key_at(key) {
+                                    Some(entry) => {
+                                        view! {
+                                            <span class="sp-key">
+                                                <em>{entry.mnemonic.to_string()}</em>
+                                                <b>{entry.key.to_string()}</b>
+                                                <i>{entry.yunmu.to_string()}</i>
+                                                {if entry.initial.is_empty() {
+                                                    view! { <small></small> }.into_any()
+                                                } else {
+                                                    view! {
+                                                        <small>{format!("兼 {}", entry.initial)}</small>
+                                                    }
+                                                        .into_any()
+                                                }}
+                                            </span>
+                                        }
+                                            .into_any()
                                     }
+                                    None => view! { <span></span> }.into_any(),
                                 })
                                 .collect_view()}
                         </div>

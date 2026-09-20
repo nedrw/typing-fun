@@ -688,6 +688,8 @@ button {
 
 .sp-row {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 0.3rem;
 }
 
@@ -695,22 +697,38 @@ button {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-width: 2.4rem;
+    min-width: 2.6rem;
     padding: 0.2rem 0.3rem;
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 0.35rem;
 }
 
+.sp-key em {
+    min-height: 0.9rem;
+    font-size: 0.65rem;
+    font-style: normal;
+    color: var(--dim);
+    opacity: 0.8;
+}
+
 .sp-key b {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--accent);
 }
 
 .sp-key i {
-    font-size: 0.7rem;
-    color: var(--dim);
+    font-size: 0.65rem;
     font-style: normal;
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.sp-key small {
+    min-height: 0.8rem;
+    font-size: 0.6rem;
+    color: var(--ok);
+    white-space: nowrap;
 }
 
 .result-title {
