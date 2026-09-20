@@ -20,37 +20,48 @@ trunk serve --open       # 只在浏览器里跑（http://localhost:1420）
 
 依赖工具：`cargo install trunk`、`cargo install tauri-cli`。
 
+## 测试
+
+```sh
+cargo test               # 引擎、课程、片段抽取、双拼表、素材清单校验等纯逻辑测试
+cargo test -p typing-fun-ui   # 同上（在 workspace 根目录时）
+```
+
+leptos 的 csr 代码能在宿主平台编译，所以跑测试既不需要浏览器也不需要 wasm 运行时，更不用拆 crate。
+
 ## 素材
 
-- 随包素材：正文是 `assets/materials/*.txt`，元数据（显示名、语言）放在 `src/materials.rs` 的 `BUNDLED` 常量表里，正文用 `include_str!` 在**编译期**嵌进二进制——运行时不读文件、不发请求
-- 加素材：往 `assets/materials/` 丢一个 txt，在 `BUNDLED` 里补一行；正文改动会被 cargo 的依赖追踪捕获，重新编译即可
-- App 内也可以「导入 .txt（可多选）」或「粘贴文本新建」；这些存 localStorage，并**按内容自动归入中文/英文**
+- **配置驱动**：清单在 `assets/materials/manifest.toml`，一段素材一个 `[[material]]`（`id` / `name` / `lang` / `file`）
+- **正文**：`assets/materials/*.txt`，由 `build.rs` 生成常量表后用 `include_str!` 内嵌进二进制——运行期不读文件、不发请求
+- **加素材**：往目录里丢一个 txt，在 `manifest.toml` 里补一段，重新编译。目录里有 txt 没被清单引用时构建会给出 warning
+- **构建期校验**（不通过直接编译失败）：文件读不到、`lang` 非法、`id` 或显示名重复、正文为空、**英文素材含非 ASCII 字符**
+- **语言规则**：英文素材只能是可打印 ASCII（美式键盘敲得出来）；中文素材允许夹英文——中文输入法下用英文模式或回车提交字母即可
+- **内置素材只读**：它们编译期内嵌，界面上不能编辑或删除；用户素材才可增删
+- **用户素材**：App 内「导入 .txt（可多选）」或「粘贴文本新建」，存 localStorage，按内容自动归入中文/英文；**同语言下同名素材会被覆盖**，方便重复导入同一份 txt
 - 练习与测试都从素材里随机截取片段：中文按字切，英文对齐词边界
-- 素材要“能打得出来”才能练：英文素材（`en-*.txt`）只应包含可打印 ASCII——
-  `LC_ALL=C grep -n '[^ -~]' assets/materials/en-*.txt` 应无输出；
-  中文素材（`zh-*.txt`）不应包含 ASCII 字母数字（中文输入法下字母会变成拼音）——
-  `grep -n '[A-Za-z0-9]' assets/materials/zh-*.txt` 应无输出
 
 ## 代码结构
 
-| 模块                           | 作用                                                            |
-| ------------------------------ | --------------------------------------------------------------- |
-| `src/engine.rs`                | 英文引擎：逐击键判定、退格、计时、净速度与正确率                |
-| `src/cn_engine.rs`             | 中文引擎：缓冲区比对，按提交字符判定                            |
-| `src/session.rs`               | 两种引擎的统一读写接口                                          |
-| `src/lessons.rs`               | 课程表与分组、练习文本生成                                      |
-| `src/layout.rs`                | 键位 → 手指 / 左右手映射，上档符号归一化                        |
-| `src/shuangpin.rs`             | 小鹤双拼键位表                                                  |
-| `src/materials.rs`             | 素材：随包素材（`include_str!` 内嵌）+ 用户素材（localStorage） |
-| `src/segment.rs`               | 随机片段截取、按内容判断素材语言                                |
-| `src/rng.rs`                   | 确定性伪随机（xorshift64）                                      |
-| `src/storage.rs`               | 成绩记录（localStorage）                                        |
-| `src/progress.rs`              | 趋势线坐标计算                                                  |
-| `src/app.rs`                   | 应用外壳：路由、菜单、键盘/鼠标游标、练习与结算                 |
-| `src/keyboard.rs` `src/dom.rs` | 虚拟键盘视图、定时器与全局键盘监听                              |
+| 模块                           | 作用                                                     |
+| ------------------------------ | -------------------------------------------------------- |
+| `build.rs`                     | 构建脚本：读 `manifest.toml`，构建期校验并生成随包素材表 |
+| `src/engine.rs`                | 英文引擎：逐击键判定、退格、计时、净速度与正确率         |
+| `src/cn_engine.rs`             | 中文引擎：缓冲区比对，按提交字符判定                     |
+| `src/session.rs`               | 两种引擎的统一读写接口                                   |
+| `src/lessons.rs`               | 课程表与分组、练习文本生成                               |
+| `src/layout.rs`                | 键位 → 手指 / 左右手映射，上档符号归一化                 |
+| `src/shuangpin.rs`             | 小鹤双拼键位表                                           |
+| `src/bundled.rs`               | 随包素材表（`build.rs` 生成后 `include!` 进来）          |
+| `src/materials.rs`             | 用户素材（localStorage，同名覆盖）与素材模型             |
+| `src/segment.rs`               | 随机片段截取、按内容判断素材语言                         |
+| `src/rng.rs`                   | 确定性伪随机（xorshift64）                               |
+| `src/storage.rs`               | 成绩记录（localStorage）                                 |
+| `src/progress.rs`              | 趋势线坐标计算                                           |
+| `src/app.rs`                   | 应用外壳：路由、菜单、键盘/鼠标游标、练习与结算          |
+| `src/keyboard.rs` `src/dom.rs` | 虚拟键盘视图、定时器与全局键盘监听                       |
 
 ## 已知取舍
 
 - 中文正确率按「当前提交的内容」算，改对了错误就消失——输入法把击键吃掉了，看不到击键
 - 双拼练习是「用你输入法里的小鹤方案打」，应用只提供素材、计时与键位参考；要做按键级判定需要汉字→拼音数据
-- 用户导入的素材存在 localStorage，不是磁盘文件（清 WebView 数据会丢）
+- 用户导入的素材存在 localStorage，不是磁盘文件（清 WebView 数据会丢）；随包素材改动需要重新编译
