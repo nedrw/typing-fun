@@ -29,9 +29,10 @@ jobs:
       - run: cargo test -p typing-fun-ui
       - run: cargo check -p typing-fun-ui --target wasm32-unknown-unknown
 
-  # 三平台安装包；推 tag（v*）时由 tauri-action 建草稿 release
+  # 三平台安装包；只在推 tag（v*）或手动触发时构建，日常 push 只跑 test
   build:
     needs: test
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
     strategy:
@@ -71,8 +72,10 @@ jobs:
             libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
             patchelf build-essential curl wget file libxdo-dev libssl-dev
 
-      - name: 安装 trunk 与 tauri-cli（rust-cache 会缓存二进制）
-        run: cargo install --locked trunk tauri-cli
+      - name: 安装 trunk 与 tauri-cli（优先预编译二进制）
+        uses: taiki-e/install-action@v2
+        with:
+          tool: trunk,tauri-cli
 
       - name: 构建安装包
         uses: tauri-apps/tauri-action@v0
