@@ -59,29 +59,43 @@ impl Drop for KeyListener {
 
 /// window 上的输入法组词监听（`compositionstart`），drop 时自动移除。
 ///
-/// 英文练习里组词意味着用户在中文输入法下敲键，这些击键不该计入统计。
+/// 英文练习里组词意味着用户在中文输入法下敲键，这些击键不该计入统计；
+/// 中文练习里还会用它听 `compositionend`，保护“Esc 取消候选”不退出练习。
 pub struct CompositionListener {
     target: web_sys::EventTarget,
+    event: String,
     cb: Closure<dyn FnMut(web_sys::CompositionEvent)>,
 }
 
 impl CompositionListener {
+    /// 监听 `compositionstart`。
     pub fn new(cb: impl FnMut(web_sys::CompositionEvent) + 'static) -> Option<Self> {
+        Self::for_event("compositionstart", cb)
+    }
+
+    /// 监听任一组词事件（例如 `compositionend`）。
+    pub fn for_event(
+        event: &str,
+        cb: impl FnMut(web_sys::CompositionEvent) + 'static,
+    ) -> Option<Self> {
         let window = web_sys::window()?;
         let target: web_sys::EventTarget = window.unchecked_into();
         let cb: Closure<dyn FnMut(web_sys::CompositionEvent)> = Closure::new(cb);
         target
-            .add_event_listener_with_callback("compositionstart", cb.as_ref().unchecked_ref())
+            .add_event_listener_with_callback(event, cb.as_ref().unchecked_ref())
             .ok()?;
-        Some(Self { target, cb })
+        Some(Self {
+            target,
+            event: event.to_string(),
+            cb,
+        })
     }
 }
 
 impl Drop for CompositionListener {
     fn drop(&mut self) {
-        let _ = self.target.remove_event_listener_with_callback(
-            "compositionstart",
-            self.cb.as_ref().unchecked_ref(),
-        );
+        let _ = self
+            .target
+            .remove_event_listener_with_callback(&self.event, self.cb.as_ref().unchecked_ref());
     }
 }

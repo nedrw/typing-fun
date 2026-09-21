@@ -323,6 +323,8 @@ pub fn App() -> impl IntoView {
     // 每次开始练习换一个种子，避免每次都是同一段
     let seed = RwSignal::new(initial_seed());
     let now = RwSignal::new(js_sys::Date::now());
+    // 自动换段后的短提示（时间戳，当前时间超过它就不再显示）
+    let advance_note_until = RwSignal::new(0.0f64);
     // 火力条：打字蓄力、随时间衰减；爆发强度用最近 2.5 秒的即时速度
     let heat = RwSignal::new(0.0f64);
     // 爆发状态：满格进入，跌破 BURST_EXIT 才退出（滞回）
@@ -375,6 +377,12 @@ pub fn App() -> impl IntoView {
             ime_notice.set(true);
         }
     }));
+    // 输入法最近一次组词结束的时间：Esc 取消候选时不要顺手退出练习
+    let last_composition_end = RwSignal::new(0.0f64);
+    let _composition_end = StoredValue::new_local(CompositionListener::for_event(
+        "compositionend",
+        move |_| last_composition_end.set(js_sys::Date::now()),
+    ));
 
     // ---------- 中文课：输入框是唯一输入通道 ----------
     let focus_input = move || {
@@ -519,8 +527,24 @@ pub fn App() -> impl IntoView {
         begin_shuangpin(text, secs, material_id);
     };
 
-    // ---------- 结束与续段 ----------
-    let finish = move || {
+    // ---------- 结束、续段与自动接续 ----------
+    // 按当前来源重新抽一段（素材池 / 指定素材 / 课程 / 测试）
+    let next_segment = move || match source.get_untracked() {
+        Source::Lesson(index) => start_lesson(index),
+        Source::Material {
+            lang,
+            shuangpin,
+            material_id,
+        } => match material_id {
+            Some(id) => start_material(id),
+            None => start_segment(lang, shuangpin, None),
+        },
+        Source::Test { lang, secs } => start_segment(lang, false, Some(secs)),
+        Source::Shuangpin { secs, material_id } => start_shuangpin(secs, material_id),
+    };
+
+    // 把当前这一段写进成绩档案，返回结算页需要的信息
+    let record_current = move || -> Finished {
         let now_ms = js_sys::Date::now();
         let (id, title, lang) = source.with_untracked(|s| s.meta());
         let (stats, top_errors, record_errors) =
@@ -542,7 +566,7 @@ pub fn App() -> impl IntoView {
                 errors_by_key: record_errors,
             },
         ));
-        route.set(Route::Result(Finished {
+        Finished {
             title,
             lang,
             stats,
@@ -551,8 +575,21 @@ pub fn App() -> impl IntoView {
             is_record: stats.cpm > previous_best,
             shuangpin: shuangpin_mode.get_untracked(),
             sp: is_sp(),
-        }));
+        }
+    };
+
+    // 限时测试到点：记账并进结算页
+    let finish = move || {
+        let finished = record_current();
+        route.set(Route::Result(finished));
         cursor.set(0);
+    };
+
+    // 非限时练习：一段打完就记账并立刻换下一段继续，不中断节奏
+    let advance = move || {
+        let _ = record_current();
+        advance_note_until.set(js_sys::Date::now() + 1_200.0);
+        next_segment();
     };
 
     // 限时测试：快打完时自动续上新片段，时间到才结算
@@ -617,7 +654,7 @@ pub fn App() -> impl IntoView {
             if test_limit.get_untracked().is_some() {
                 maybe_extend();
             } else {
-                finish();
+                advance();
             }
         }
     };
@@ -772,19 +809,7 @@ pub fn App() -> impl IntoView {
             route.set(Route::Material);
             cursor.set(0);
         }
-        Action::Restart => match source.get_untracked() {
-            Source::Lesson(index) => start_lesson(index),
-            Source::Material {
-                lang,
-                shuangpin,
-                material_id,
-            } => match material_id {
-                Some(id) => start_material(id),
-                None => start_segment(lang, shuangpin, None),
-            },
-            Source::Test { lang, secs } => start_segment(lang, false, Some(secs)),
-            Source::Shuangpin { secs, material_id } => start_shuangpin(secs, material_id),
-        },
+        Action::Restart => next_segment(),
         Action::Back => back(),
     };
 
@@ -944,9 +969,11 @@ pub fn App() -> impl IntoView {
 
         if route.get_untracked() == Route::Practice {
             match key.as_str() {
-                // 输入法组词中 Esc 是「取消候选」，不能顺手退出练习
+                // 输入法组词中/刚结束时 Esc 是「取消候选」，不能顺手退出练习
                 "Escape" => {
-                    if ev.is_composing() {
+                    if ev.is_composing()
+                        || js_sys::Date::now() - last_composition_end.get_untracked() < 300.0
+                    {
                         return;
                     }
                     back()
@@ -1006,7 +1033,7 @@ pub fn App() -> impl IntoView {
                             if test_limit.get_untracked().is_some() {
                                 maybe_extend();
                             } else {
-                                finish();
+                                advance();
                             }
                         }
                     }
@@ -1529,7 +1556,13 @@ pub fn App() -> impl IntoView {
                                 </button>
                             </div>
 
-                            <div class="hint">{hint}</div>
+                            <div class="hint">
+                                {hint}
+                                {move || {
+                                    (now.get() < advance_note_until.get())
+                                        .then(|| view! { <b class="advance-note">"　已换一段，继续"</b> })
+                                }}
+                            </div>
                             {move || {
                                 ime_notice
                                     .get()

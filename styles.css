@@ -414,6 +414,11 @@ button {
     min-height: 1.4rem;
 }
 
+.advance-note {
+    color: var(--ok);
+    font-weight: 600;
+}
+
 .warn {
     margin: 0.4rem 0 0;
     padding: 0.5rem 0.75rem;
