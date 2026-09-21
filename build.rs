@@ -69,7 +69,7 @@ fn main() {
         );
         let text = fs::read_to_string(&path)
             .unwrap_or_else(|err| panic!("读不到素材正文 {}：{err}", path.display()));
-        check_typeable(&entry.id, &entry.name, &lang, &text);
+        check_typeable(&entry.id, &entry.name, &entry.lang, &text);
 
         table.push_str(&format!(
             "    ({:?}, {:?}, {}, include_str!({:?})),\n",
@@ -96,7 +96,7 @@ fn main() {
 /// 中文素材允许夹英文（中文输入法下可用英文模式或回车直接提交字母），仅要求非空。
 fn check_typeable(id: &str, name: &str, lang: &str, text: &str) {
     assert!(!text.trim().is_empty(), "素材 {id}（{name}）正文是空的");
-    if lang.ends_with("En") {
+    if lang == "en" {
         if let Some(bad) = text.chars().find(|c| !c.is_ascii()) {
             panic!("英文素材 {id}（{name}）含非 ASCII 字符 {bad:?}，键盘上打不出来");
         }

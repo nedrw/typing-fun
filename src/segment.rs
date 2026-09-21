@@ -3,19 +3,17 @@
 use crate::lessons::Lang;
 use crate::rng::Rng;
 
-/// 按内容判断素材语言：ASCII 字母多算英文，汉字多算中文。
+/// 按内容判断素材语言：只含可打印 ASCII 的算英文，其余算中文。
+///
+/// 判定规则故意保守：英文练习是逐键判定，素材里只要有一个非 ASCII 字符，
+/// 用户就永远打不出来（指法课模式下直接卡死）。所以「只要含汉字就归中文」，
+/// 中文课允许夹英文（中文输入法下可以用英文模式或回车提交字母）。
 /// 用于导入/粘贴时自动归类，避免把英文素材挂到中文课（反之亦然）。
 pub fn detect_lang(text: &str) -> Lang {
-    let mut ascii = 0usize;
-    let mut han = 0usize;
-    for c in text.chars() {
-        if c.is_ascii_alphabetic() {
-            ascii += 1;
-        } else if ('\u{4e00}'..='\u{9fff}').contains(&c) {
-            han += 1;
-        }
-    }
-    if ascii > han {
+    let english_safe = text
+        .chars()
+        .all(|c| c.is_ascii() && (c.is_ascii_graphic() || c.is_whitespace()));
+    if english_safe {
         Lang::En
     } else {
         Lang::Zh
@@ -119,7 +117,16 @@ mod tests {
     fn language_is_detected_from_content() {
         assert_eq!(detect_lang("Practice makes perfect"), Lang::En);
         assert_eq!(detect_lang("打字是一项技能"), Lang::Zh);
-        assert_eq!(detect_lang("中文 abcdefg"), Lang::En, "按多数派判断");
-        assert_eq!(detect_lang("1234"), Lang::Zh, "分不出时归中文");
+        assert_eq!(
+            detect_lang("中文 abcdefg"),
+            Lang::Zh,
+            "含汉字就必须归中文，否则英文课里这些字打不出来"
+        );
+        assert_eq!(
+            detect_lang("1234 -=[]"),
+            Lang::En,
+            "纯 ASCII 符号在英文键盘上打得出来"
+        );
+        assert_eq!(detect_lang("café"), Lang::Zh, "非 ASCII 字符一律归中文");
     }
 }
