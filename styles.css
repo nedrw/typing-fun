@@ -40,8 +40,9 @@ html {
 
 body {
     margin: 0;
-    min-height: 100%;
-    /* 顶栏固定、主区域自己滚动：练习页可以撑满窗口不出现页面滚动条 */
+    /* 应用外壳：高度锁定视口，只有主区域滚动，页面本身不出滚动条 */
+    height: 100%;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     background: var(--bg);
@@ -83,7 +84,7 @@ button {
     overflow-y: auto;
     width: 100%;
     box-sizing: border-box;
-    padding: 0.6rem 1.5rem 1.6rem;
+    padding: 0.6rem 1.5rem 1rem;
     max-width: 62rem;
     margin: 0 auto;
 }
@@ -497,7 +498,7 @@ button {
     flex-direction: column;
     gap: 0.3rem;
     align-items: center;
-    margin: 1rem auto 0.4rem;
+    margin: 0.7rem auto 0.3rem;
     user-select: none;
 }
 
@@ -589,7 +590,7 @@ button {
     justify-content: center;
     color: var(--dim);
     font-size: 0.75rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.6rem;
 }
 
 .legend-item {
@@ -1018,9 +1019,20 @@ button {
     color: var(--text);
 }
 
+/* 顶栏里的紧凑按钮（练习页的操作放到抬头右侧） */
+.btn.small {
+    padding: 0.3rem 0.85rem;
+    font-size: 0.85rem;
+}
+
 @media (max-width: 46rem) {
     .hud {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    /* 窄窗口下抬头只留按钮，Esc 提示收起来 */
+    .topbar .sub {
+        display: none;
     }
 
     .key {

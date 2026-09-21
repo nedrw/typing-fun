@@ -1260,7 +1260,20 @@ pub fn App() -> impl IntoView {
             <div class="topbar-right">
                 {move || {
                     if route.get() == Route::Practice {
-                        view! { <span class="sub">"Esc 退出练习"</span> }.into_any()
+                        // 练习页操作放到抬眼右侧，底部留给文本和键盘
+                        view! {
+                            <button
+                                class="btn ghost small"
+                                on:click=move |_| activate(Action::Restart)
+                            >
+                                "重新开始"
+                            </button>
+                            <button class="btn ghost small" on:click=move |_| back()>
+                                "返回菜单"
+                            </button>
+                            <span class="sub">"Esc 退出练习"</span>
+                        }
+                            .into_any()
                     } else {
                         view! {
                             <div class="tabs">
@@ -1637,18 +1650,6 @@ pub fn App() -> impl IntoView {
                                 }
                                     .into_any()
                             }}
-
-                            <div class="controls">
-                                <button
-                                    class="btn"
-                                    on:click=move |_| activate(Action::Restart)
-                                >
-                                    "重新开始"
-                                </button>
-                                <button class="btn ghost" on:click=move |_| back()>
-                                    "返回菜单"
-                                </button>
-                            </div>
                         </section>
                     }
                         .into_any()
