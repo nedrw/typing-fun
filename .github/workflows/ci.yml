@@ -87,7 +87,7 @@ jobs:
           tauriScript: cargo tauri
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
           tagName: ${{ startsWith(github.ref, 'refs/tags/v') && 'v__VERSION__' || '' }}
-          releaseName: "TT 打字训练 v__VERSION__"
+          releaseName: "打字训练 v__VERSION__"
           releaseDraft: true
           prerelease: false
 

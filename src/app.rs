@@ -1120,7 +1120,7 @@ pub fn App() -> impl IntoView {
 
     view! {
         <header class="topbar">
-            <h1>"TT 打字训练"</h1>
+            <h1>"打字训练"</h1>
             <div class="topbar-right">
                 {move || {
                     if route.get() == Route::Practice {

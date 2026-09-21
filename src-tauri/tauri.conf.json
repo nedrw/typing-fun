@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "typing-fun",
+  "productName": "Typing Trainer",
   "version": "0.1.0",
   "identifier": "com.drmin.typing-fun",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "TT 打字训练",
+        "title": "打字训练",
         "width": 980,
         "height": 760,
         "minWidth": 760,

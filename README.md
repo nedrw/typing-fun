@@ -1,7 +1,10 @@
-# TT 打字训练
+# 打字训练
 
-复刻经典 TT 的打字训练桌面应用，纯 Rust 全栈：Tauri 2 桌面壳 + Leptos 0.8（CSR/WASM）前端。
-三套判定引擎——英文逐击键、中文输入法提交比对、小鹤双拼按键判定；素材与成绩都在本地。
+纯本地的桌面打字训练应用，纯 Rust 全栈：Tauri 2 桌面壳 + Leptos 0.8（CSR/WASM）前端。
+
+> **中文**：内置三套判定引擎——英文逐键指法、中文输入法提交比对、小鹤双拼按键判定。素材、成绩与设置全部保存在本地，可导入自己的 txt（UTF-8 / GBK），支持限时测试与常错键复盘。练习页面向速度训练：逐字着色、文本自动跟随游标、虚拟键盘提示下一个键，菜单用鼠标或键盘都能操作。
+>
+> **English**: A fully local desktop typing trainer with three judging engines: English key-by-key touch typing, Chinese IME submission comparison, and Xiaohe double-pinyin keystroke drills. Materials, scores, and settings stay local; import your own txt files (UTF-8 / GBK), take timed tests, and review your most-missed keys. The practice view is built for speed — per-character coloring, auto-following text, and a virtual keyboard that hints the next key, with menus fully operable by mouse or keyboard.
 
 ## 功能
 
