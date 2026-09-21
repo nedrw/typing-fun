@@ -34,8 +34,16 @@
     box-sizing: border-box;
 }
 
+html {
+    height: 100%;
+}
+
 body {
     margin: 0;
+    min-height: 100%;
+    /* 顶栏固定、主区域自己滚动：练习页可以撑满窗口不出现页面滚动条 */
+    display: flex;
+    flex-direction: column;
     background: var(--bg);
     color: var(--text);
 }
@@ -48,6 +56,7 @@ button {
 }
 
 .topbar {
+    flex: none;
     padding: 1.2rem 1.5rem 0.4rem;
     display: flex;
     align-items: baseline;
@@ -67,9 +76,38 @@ button {
 }
 
 .screen {
-    padding: 0.6rem 1.5rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.6rem 1.5rem 1.6rem;
     max-width: 62rem;
     margin: 0 auto;
+}
+
+/* 非练习页保持自然高度，超出时由 .screen 滚动 */
+.screen > * {
+    flex: none;
+}
+
+/* 练习页：纵向撑满，文本框把剩余空间吃掉，避免页面出现滚动条 */
+.screen > .practice {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.practice > * {
+    flex: none;
+}
+
+.practice > .text-box {
+    flex: 1 1 auto;
+    min-height: 7rem;
 }
 
 /* ---------- 课程表 ---------- */
@@ -279,18 +317,28 @@ button {
     border-radius: 0.6rem;
     /* 右上角给「换一段」按钮留位置 */
     padding: 1rem 5.8rem 1rem 1.2rem;
-    min-height: 7rem;
-    /* 限时测试会不断续段，限定高度并自动跟随游标（见 app.rs 的 Effect） */
-    max-height: 14rem;
+    /* 高度由外层 text-box 分配，文本超出时内部滚动（自动跟随游标） */
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
+    scrollbar-width: none;
     scroll-padding-block: 2.5rem;
     white-space: pre-wrap;
     word-break: break-word;
     user-select: none;
 }
 
+/* 练习时不显示滚动条，靠自动跟随游标定位 */
+.text::-webkit-scrollbar {
+    display: none;
+}
+
 .text-box {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 7rem;
 }
 
 .text-refresh {
