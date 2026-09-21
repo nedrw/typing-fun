@@ -181,8 +181,6 @@ enum Action {
     DeleteMaterial(String),
     SaveMaterial,
     Restart,
-    /// 换一段素材（按当前来源重新抽）
-    Refresh,
     Back,
 }
 
@@ -314,8 +312,6 @@ pub fn App() -> impl IntoView {
     let ime_notice = RwSignal::new(false);
     // 每次开始练习换一个种子，避免每次都是同一段
     let seed = RwSignal::new(0x9E37_79B9_7F4A_7C15u64);
-    // 当前练习的完整文本：「重打本段」复用，不重新抽词
-    let practice_text = RwSignal::new(String::new());
     let now = RwSignal::new(js_sys::Date::now());
     // 火力条：打字蓄力、随时间衰减；爆发强度用最近 2.5 秒的即时速度
     let heat = RwSignal::new(0.0f64);
@@ -400,7 +396,6 @@ pub fn App() -> impl IntoView {
         seed.update(|s| *s = next_seed(*s));
         let lesson = &LESSONS[index];
         let text = lesson.generate(seed.get_untracked());
-        practice_text.set(text.clone());
         // 指法课要求打对当前字符才能前进
         session.set(Session::new(&text, lesson.lang, ErrorMode::StopOnError));
         ime_notice.set(false);
@@ -419,7 +414,6 @@ pub fn App() -> impl IntoView {
     };
 
     let begin = move |text: String, src: Source, limit: Option<u32>| {
-        practice_text.set(text.clone());
         let lang = src.lang();
         let shuangpin = matches!(
             src,
@@ -492,7 +486,6 @@ pub fn App() -> impl IntoView {
 
     // 双拼按键判定：默认从中文素材池随机截一段；指定素材时用该素材
     let begin_shuangpin = move |text: String, secs: Option<u32>, material_id: Option<String>| {
-        practice_text.set(text.clone());
         zh_mode.set(ZhMode::Shuangpin);
         // 面向速度：打错自动补上期望键继续，错误计入正确率
         session.set(Session::shuangpin(&text, ErrorMode::Continue));
@@ -514,30 +507,6 @@ pub fn App() -> impl IntoView {
             None => draw_segment(all, Lang::Zh, seed.get_untracked(), false),
         });
         begin_shuangpin(text, secs, material_id);
-    };
-
-    // 重打本段：文本不变、进度清零，火力保留
-    let restart_same = move || {
-        let text = practice_text.get_untracked();
-        match source.get_untracked() {
-            Source::Shuangpin { secs, material_id } => begin_shuangpin(text, secs, material_id),
-            src => begin(text, src, test_limit.get_untracked()),
-        }
-    };
-
-    // 换一段：按当前来源重新抽一段（素材池 / 指定素材 / 课程），火力保留
-    let refresh = move || match source.get_untracked() {
-        Source::Lesson(index) => start_lesson(index),
-        Source::Material {
-            lang,
-            shuangpin,
-            material_id,
-        } => match material_id {
-            Some(id) => start_material(id),
-            None => start_segment(lang, shuangpin, None),
-        },
-        Source::Test { lang, secs } => start_segment(lang, false, Some(secs)),
-        Source::Shuangpin { secs, material_id } => start_shuangpin(secs, material_id),
     };
 
     // ---------- 结束与续段 ----------
@@ -793,8 +762,19 @@ pub fn App() -> impl IntoView {
             route.set(Route::Material);
             cursor.set(0);
         }
-        Action::Restart => restart_same(),
-        Action::Refresh => refresh(),
+        Action::Restart => match source.get_untracked() {
+            Source::Lesson(index) => start_lesson(index),
+            Source::Material {
+                lang,
+                shuangpin,
+                material_id,
+            } => match material_id {
+                Some(id) => start_material(id),
+                None => start_segment(lang, shuangpin, None),
+            },
+            Source::Test { lang, secs } => start_segment(lang, false, Some(secs)),
+            Source::Shuangpin { secs, material_id } => start_shuangpin(secs, material_id),
+        },
         Action::Back => back(),
     };
 
@@ -927,8 +907,7 @@ pub fn App() -> impl IntoView {
                 items
             }
             Route::Result(_) => vec![
-                item("换一段", "按当前来源再抽一段，火力接上", Action::Refresh),
-                item("重打本段", "同样的文本再来一遍", Action::Restart),
+                item("再来一次", "重新抽一段继续", Action::Restart),
                 item("返回课程表", "回到菜单", Action::Back),
             ],
             Route::History => vec![],
@@ -968,7 +947,7 @@ pub fn App() -> impl IntoView {
                     if ev.is_composing() {
                         return;
                     }
-                    refresh();
+                    activate(Action::Restart);
                 }
                 "Backspace" => {
                     if !uses_input_field() {
@@ -1533,7 +1512,7 @@ pub fn App() -> impl IntoView {
                                     title="换一段素材（Tab）"
                                     on:click=move |ev| {
                                         ev.stop_propagation();
-                                        refresh();
+                                        activate(Action::Restart);
                                     }
                                 >
                                     "⟳ 换一段"
