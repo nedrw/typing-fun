@@ -248,6 +248,63 @@ button {
     animation: flash 0.18s ease-out;
 }
 
+/* 双拼键位练习：一个字一格，拼音与编码在字下方 */
+
+.text.sp {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.15rem 0.1rem;
+    line-height: normal;
+}
+
+.sp-cell {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.1rem 0.25rem;
+    border-radius: 0.3rem;
+    border: 1px solid transparent;
+}
+
+.sp-cell b {
+    font-size: 1.5rem;
+    line-height: 1.9rem;
+    font-weight: 500;
+    color: var(--dim);
+}
+
+.sp-cell i,
+.sp-cell em {
+    font-style: normal;
+    font-size: 0.62rem;
+    line-height: 0.95rem;
+    color: var(--dim);
+}
+
+.sp-cell em {
+    color: var(--accent);
+    letter-spacing: 0.06em;
+}
+
+.sp-cell.done b {
+    color: var(--ok);
+}
+
+.sp-cell.current {
+    background: var(--cursor);
+}
+
+.sp-cell.flash {
+    background: var(--bad);
+}
+
+.sp-cell.flash b,
+.sp-cell.flash i,
+.sp-cell.flash em {
+    color: #fff;
+}
+
 .hint {
     margin: 0.9rem 0 0.2rem;
     color: var(--accent);

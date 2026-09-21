@@ -9,12 +9,14 @@ mod layout;
 mod lessons;
 mod materials;
 mod model;
+mod pinyin;
 mod progress;
 mod rng;
 mod segment;
 mod session;
 mod settings;
 mod shuangpin;
+mod sp_engine;
 mod storage;
 mod store;
 

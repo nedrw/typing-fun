@@ -45,6 +45,10 @@ enum Source {
         lang: Lang,
         secs: u32,
     },
+    /// 双拼按键判定（小鹤）：secs 为 Some 时是限时测试
+    Shuangpin {
+        secs: Option<u32>,
+    },
 }
 
 impl Source {
@@ -52,6 +56,7 @@ impl Source {
         match self {
             Source::Lesson(index) => LESSONS[*index].lang,
             Source::Material { lang, .. } | Source::Test { lang, .. } => *lang,
+            Source::Shuangpin { .. } => Lang::Zh,
         }
     }
 
@@ -82,6 +87,18 @@ impl Source {
                 format!("{}限时测试 · {} 分钟", lang.name(), secs / 60),
                 *lang,
             ),
+            Source::Shuangpin { secs } => match secs {
+                Some(secs) => (
+                    format!("zh-shuangpin-test-{secs}"),
+                    format!("双拼键位测试 · {} 分钟", secs / 60),
+                    Lang::Zh,
+                ),
+                None => (
+                    "zh-shuangpin-key".to_string(),
+                    "双拼键位练习".to_string(),
+                    Lang::Zh,
+                ),
+            },
         }
     }
 }
@@ -119,6 +136,8 @@ struct Finished {
     best_cpm: f64,
     is_record: bool,
     shuangpin: bool,
+    /// 双拼按键判定模式（错误统计的是击键，不是错字）
+    sp: bool,
 }
 
 #[derive(Clone, PartialEq)]
@@ -142,6 +161,10 @@ enum Action {
     PracticeMaterial(String),
     /// 限时测试（秒）
     Test(u32),
+    /// 双拼按键判定（小鹤）：secs 为 Some 时是限时测试
+    Shuangpin {
+        secs: Option<u32>,
+    },
     Import,
     DeleteMaterial(String),
     SaveMaterial,
@@ -283,6 +306,10 @@ pub fn App() -> impl IntoView {
     let stats = Memo::new(move |_| session.with(|s| s.stats(now.get())));
     let session_lang = move || source.with(|s| s.lang());
     let is_zh = move || session_lang() == Lang::Zh;
+    // 双拼按键判定：不用输入框，字母键直接进击键引擎
+    let is_sp = move || matches!(source.get(), Source::Shuangpin { .. });
+    // 只有中文输入法模式需要输入框
+    let uses_input_field = move || is_zh() && !is_sp();
 
     // 英文练习里检测到输入法组词：说明用户在中文输入法下敲键，提示切回英文键盘
     let _composition = StoredValue::new_local(CompositionListener::new(move |_| {
@@ -392,6 +419,21 @@ pub fn App() -> impl IntoView {
         }
     };
 
+    // 双拼按键判定：从中文素材随机截一段，按小鹤码逐键打
+    let start_shuangpin = move |secs: Option<u32>| {
+        seed.update(|s| *s = next_seed(*s));
+        let text =
+            all_materials.with(|all| draw_segment(all, Lang::Zh, seed.get_untracked(), false));
+        // 面向速度：打错自动补上期望键继续，错误计入正确率
+        session.set(Session::shuangpin(&text, ErrorMode::Continue));
+        ime_notice.set(false);
+        source.set(Source::Shuangpin { secs });
+        test_limit.set(secs);
+        shuangpin_mode.set(false);
+        route.set(Route::Practice);
+        cursor.set(0);
+    };
+
     // ---------- 结束与续段 ----------
     let finish = move || {
         let now_ms = js_sys::Date::now();
@@ -423,6 +465,7 @@ pub fn App() -> impl IntoView {
             best_cpm: previous_best.max(stats.cpm),
             is_record: stats.cpm > previous_best,
             shuangpin: shuangpin_mode.get_untracked(),
+            sp: is_sp(),
         }));
         cursor.set(0);
     };
@@ -557,6 +600,7 @@ pub fn App() -> impl IntoView {
         Action::Segment { shuangpin } => start_segment(tab.get_untracked(), shuangpin, None),
         Action::PracticeMaterial(id) => start_material(id),
         Action::Test(secs) => start_segment(tab.get_untracked(), false, Some(secs)),
+        Action::Shuangpin { secs } => start_shuangpin(secs),
         Action::Import => {
             if let Some(input) = file_ref.get() {
                 input.click();
@@ -608,6 +652,7 @@ pub fn App() -> impl IntoView {
                 None => start_segment(lang, shuangpin, None),
             },
             Source::Test { lang, secs } => start_segment(lang, false, Some(secs)),
+            Source::Shuangpin { secs } => start_shuangpin(secs),
         },
         Action::Back => back(),
     };
@@ -637,9 +682,14 @@ pub fn App() -> impl IntoView {
                         Action::Segment { shuangpin: false },
                     ));
                     items.push(item(
-                        "双拼练习（小鹤）",
+                        "双拼练习（跟自己的输入法）",
                         "输入法切到小鹤方案，配键位表练习",
                         Action::Segment { shuangpin: true },
+                    ));
+                    items.push(item(
+                        "双拼键位（按键判定）",
+                        "按小鹤码逐键判定，多音字接受任一读音，打错自动纠正",
+                        Action::Shuangpin { secs: None },
                     ));
                 } else {
                     items.push(item(
@@ -677,11 +727,26 @@ pub fn App() -> impl IntoView {
                     )
                 })
                 .collect(),
-            Route::Tests => vec![
-                item("1 分钟测试", "计 1 分钟，到点结算", Action::Test(60)),
-                item("2 分钟测试", "计 2 分钟，到点结算", Action::Test(120)),
-                item("5 分钟测试", "计 5 分钟，到点结算", Action::Test(300)),
-            ],
+            Route::Tests => {
+                let mut tests = vec![
+                    item("1 分钟测试", "计 1 分钟，到点结算", Action::Test(60)),
+                    item("2 分钟测试", "计 2 分钟，到点结算", Action::Test(120)),
+                    item("5 分钟测试", "计 5 分钟，到点结算", Action::Test(300)),
+                ];
+                if lang == Lang::Zh {
+                    tests.push(item(
+                        "双拼键位 1 分钟",
+                        "小鹤码按键判定，计 1 分钟",
+                        Action::Shuangpin { secs: Some(60) },
+                    ));
+                    tests.push(item(
+                        "双拼键位 3 分钟",
+                        "小鹤码按键判定，计 3 分钟",
+                        Action::Shuangpin { secs: Some(180) },
+                    ));
+                }
+                tests
+            }
             Route::Material => {
                 let mut items = vec![
                     item(
@@ -753,14 +818,14 @@ pub fn App() -> impl IntoView {
                     back()
                 }
                 "Backspace" => {
-                    if !is_zh() {
+                    if !uses_input_field() {
                         ev.prevent_default();
                         session.update(|s| s.backspace());
                     }
                 }
                 _ => {
-                    // 中文与双拼的字符交给输入法和输入框
-                    if is_zh() {
+                    // 中文输入法的字符交给输入框，不在这里判定
+                    if uses_input_field() {
                         return;
                     }
                     // 输入法正在组词（或系统把按键标成 Process）：不该计入英文练习
@@ -770,9 +835,19 @@ pub fn App() -> impl IntoView {
                     }
                     let mut chars = key.chars();
                     if let (Some(ch), None) = (chars.next(), chars.next()) {
-                        if !(ch.is_ascii_graphic() || ch == ' ') {
-                            return;
-                        }
+                        let ch = if is_sp() {
+                            // 双拼只判定字母键；空格/数字/标点不参与
+                            let lowered = ch.to_ascii_lowercase();
+                            if !lowered.is_ascii_alphabetic() {
+                                return;
+                            }
+                            lowered
+                        } else {
+                            if !(ch.is_ascii_graphic() || ch == ' ') {
+                                return;
+                            }
+                            ch
+                        };
                         if session.with_untracked(|s| s.is_empty() || s.finished()) {
                             return;
                         }
@@ -851,6 +926,10 @@ pub fn App() -> impl IntoView {
 
     // ---------- 视图 ----------
     let hint = move || {
+        // 双拼按键模式：给出当前字的拼音与常用编码
+        if let Some((ch, pinyin, code)) = session.with(|s| s.sp_current()) {
+            return format!("下一个：{ch} · 拼音 {pinyin} · 小鹤 {}{}", code[0], code[1]);
+        }
         let next = session.with(|s| s.expected());
         match next {
             None => "本段内容已打完".to_string(),
@@ -895,13 +974,53 @@ pub fn App() -> impl IntoView {
         })
     };
 
+    // 双拼按键模式的目标格：字 + 拼音 + 常用编码
+    let sp_cells = move || {
+        session.with(|s| {
+            let Some(targets) = s.sp_targets() else {
+                return ().into_any();
+            };
+            let cursor = s.cursor();
+            let mistake = s.mistake_at();
+            targets
+                .iter()
+                .enumerate()
+                .map(|(i, target)| {
+                    let mut class = String::from("sp-cell");
+                    match s.state_at(i) {
+                        CharState::Todo => {}
+                        CharState::Done => class.push_str(" done"),
+                        CharState::Wrong => class.push_str(" wrong"),
+                    }
+                    if mistake == Some(i) {
+                        class.push_str(" flash");
+                    } else if i == cursor {
+                        class.push_str(" current");
+                    }
+                    view! {
+                        <span class=class>
+                            <b>{target.ch.to_string()}</b>
+                            <i>{target.pinyin.to_string()}</i>
+                            <em>{format!("{}{}", target.codes[0][0], target.codes[0][1])}</em>
+                        </span>
+                    }
+                })
+                .collect_view()
+                .into_any()
+        })
+    };
+
     // 练习文本自动跟随游标：限时测试会不断续段，不跟随的话游标很快滚出视口
     Effect::new(move |_| {
         let _ = session.with(|s| s.cursor());
         let Some(container) = text_ref.get() else {
             return;
         };
-        let Some(cur) = container.query_selector(".ch.cursor").ok().flatten() else {
+        let Some(cur) = container
+            .query_selector(".ch.cursor, .sp-cell.current")
+            .ok()
+            .flatten()
+        else {
             return;
         };
         let options = web_sys::ScrollIntoViewOptions::new();
@@ -1120,7 +1239,7 @@ pub fn App() -> impl IntoView {
                                 </div>
                                 <div class="cell">
                                     <span class="k">
-                                        {move || if is_zh() { "错字" } else { "错误" }}
+                                        {move || if uses_input_field() { "错字" } else { "错误" }}
                                     </span>
                                     <b>{move || stats.get().errors.to_string()}</b>
                                 </div>
@@ -1159,7 +1278,16 @@ pub fn App() -> impl IntoView {
                                 }></i>
                             </div>
 
-                            <div node_ref=text_ref class=move || if is_zh() { "text zh" } else { "text" }>{text_spans}</div>
+                            <div
+                                node_ref=text_ref
+                                class=move || match (is_zh(), is_sp()) {
+                                    (_, true) => "text zh sp",
+                                    (true, false) => "text zh",
+                                    _ => "text",
+                                }
+                            >
+                                {move || if is_sp() { sp_cells() } else { text_spans().into_any() }}
+                            </div>
 
                             <div class="hint">{hint}</div>
                             {move || {
@@ -1168,13 +1296,17 @@ pub fn App() -> impl IntoView {
                                     .then(|| {
                                         view! {
                                             <p class="warn">
-                                                "检测到输入法正在组词：英文练习请先切回英文键盘（macOS 可用 Caps Lock 或 ⌃Space），组词中的击键不会被计入。"
+                                                {if is_sp() {
+                                                    "检测到输入法正在组词：双拼键位练习需要英文键盘状态（小鹤码是字母），请先切回英文键盘。"
+                                                } else {
+                                                    "检测到输入法正在组词：英文练习请先切回英文键盘（macOS 可用 Caps Lock 或 ⌃Space），组词中的击键不会被计入。"
+                                                }}
                                             </p>
                                         }
                                     })
                             }}
 
-                            {move || if is_zh() {
+                            {move || if uses_input_field() {
                                 view! {
                                     <div class="cn-panel">
                                         <input
@@ -1251,10 +1383,14 @@ pub fn App() -> impl IntoView {
                 Route::Result(finished) => {
                     let stats = finished.stats;
                     let zh = finished.lang == Lang::Zh;
+                    let sp = finished.sp;
                     let cells: Vec<(&'static str, String)> = if zh {
                         vec![
                             ("正确率", format!("{:.1}%", stats.accuracy)),
-                            ("输入 / 错字", format!("{} / {}", stats.strokes, stats.errors)),
+                            (
+                                if sp { "击键 / 错误" } else { "输入 / 错字" },
+                                format!("{} / {}", stats.strokes, stats.errors),
+                            ),
                             ("用时", fmt_secs(stats.secs)),
                             ("正确字数", format!("{}/{}", stats.correct, stats.total)),
                             ("本项最佳", format!("{:.0} 字/分", finished.best_cpm)),
@@ -1279,9 +1415,11 @@ pub fn App() -> impl IntoView {
                             .collect::<Vec<_>>()
                             .join("   ")
                     };
-                    let problem_label = if zh { "错字" } else { "问题键" };
+                    let problem_label = if zh && !sp { "错字" } else { "问题键" };
                     let title = finished.title.clone();
-                    let mode_note = if finished.shuangpin {
+                    let mode_note = if sp {
+                        "双拼键位 · 按小鹤码逐键判定，多音字接受任一读音"
+                    } else if finished.shuangpin {
                         "双拼练习 · 用输入法的小鹤方案输入"
                     } else {
                         ""

@@ -1,13 +1,16 @@
-//! 练习会话：英文走击键引擎，中文走输入法引擎，界面通过统一接口读取。
+//! 练习会话：英文走击键引擎，中文走输入法引擎，双拼走按键判定引擎。
+//! 界面通过统一接口读取。
 
 use crate::cn_engine::CnEngine;
 use crate::engine::{Engine, ErrorMode};
 use crate::lessons::Lang;
 use crate::model::{CharState, Stats};
+use crate::sp_engine::{SpEngine, SpTarget};
 
 pub enum Session {
     En(Engine),
     Zh(CnEngine),
+    Sp(SpEngine),
 }
 
 impl Session {
@@ -18,21 +21,34 @@ impl Session {
         }
     }
 
-    /// 英文：处理一次字符击键。中文模式忽略（输入由输入框驱动）。
+    /// 双拼按键判定：目标汉字按小鹤码逐键打。
+    pub fn shuangpin(text: &str, mode: ErrorMode) -> Self {
+        Self::Sp(SpEngine::new(text, mode))
+    }
+
+    /// 英文 / 双拼：处理一次字符击键。中文模式忽略（输入由输入框驱动）。
     pub fn press_char(&mut self, ch: char, now_ms: f64) {
-        if let Self::En(engine) = self {
-            engine.press(ch, now_ms);
+        match self {
+            Self::En(engine) => {
+                engine.press(ch, now_ms);
+            }
+            Self::Sp(engine) => {
+                engine.press(ch, now_ms);
+            }
+            Self::Zh(_) => {}
         }
     }
 
-    /// 英文：退格。中文模式忽略（退格由输入框自己处理）。
+    /// 英文 / 双拼：退格。中文模式忽略（退格由输入框自己处理）。
     pub fn backspace(&mut self) {
-        if let Self::En(engine) = self {
-            engine.backspace();
+        match self {
+            Self::En(engine) => engine.backspace(),
+            Self::Sp(engine) => engine.backspace(),
+            Self::Zh(_) => {}
         }
     }
 
-    /// 中文：用输入框内容刷新。英文模式忽略。
+    /// 中文：用输入框内容刷新。其余模式忽略。
     pub fn sync_text(&mut self, text: &str, now_ms: f64) {
         if let Self::Zh(engine) = self {
             engine.sync(text, now_ms);
@@ -44,6 +60,7 @@ impl Session {
         match self {
             Self::En(e) => e.extend_target(text),
             Self::Zh(e) => e.extend_target(text),
+            Self::Sp(e) => e.extend_target(text),
         }
     }
 
@@ -51,13 +68,16 @@ impl Session {
         match self {
             Self::En(e) => e.len(),
             Self::Zh(e) => e.len(),
+            Self::Sp(e) => e.len(),
         }
     }
 
+    /// 目标字符。双拼模式没有单一字符目标，请用 `sp_targets()`。
     pub fn target(&self) -> &[char] {
         match self {
             Self::En(e) => e.target(),
             Self::Zh(e) => e.target(),
+            Self::Sp(_) => &[],
         }
     }
 
@@ -65,6 +85,7 @@ impl Session {
         match self {
             Self::En(e) => e.is_empty(),
             Self::Zh(e) => e.is_empty(),
+            Self::Sp(e) => e.is_empty(),
         }
     }
 
@@ -72,6 +93,7 @@ impl Session {
         match self {
             Self::En(e) => e.cursor(),
             Self::Zh(e) => e.cursor(),
+            Self::Sp(e) => e.cursor(),
         }
     }
 
@@ -79,6 +101,7 @@ impl Session {
         match self {
             Self::En(e) => e.state_at(i),
             Self::Zh(e) => e.state_at(i),
+            Self::Sp(e) => e.state_at(i),
         }
     }
 
@@ -86,6 +109,7 @@ impl Session {
         match self {
             Self::En(e) => e.expected(),
             Self::Zh(e) => e.expected(),
+            Self::Sp(e) => e.expected(),
         }
     }
 
@@ -93,6 +117,7 @@ impl Session {
         match self {
             Self::En(e) => e.mistake_at(),
             Self::Zh(e) => e.mistake_at(),
+            Self::Sp(e) => e.mistake_at(),
         }
     }
 
@@ -100,6 +125,7 @@ impl Session {
         match self {
             Self::En(e) => e.finished(),
             Self::Zh(e) => e.finished(),
+            Self::Sp(e) => e.finished(),
         }
     }
 
@@ -107,6 +133,7 @@ impl Session {
         match self {
             Self::En(e) => e.top_error_keys(n),
             Self::Zh(e) => e.top_error_keys(n),
+            Self::Sp(e) => e.top_error_keys(n),
         }
     }
 
@@ -114,6 +141,23 @@ impl Session {
         match self {
             Self::En(e) => e.stats(now_ms),
             Self::Zh(e) => e.stats(now_ms),
+            Self::Sp(e) => e.stats(now_ms),
+        }
+    }
+
+    /// 双拼模式的目标格（字 + 拼音 + 编码）；其余模式返回 `None`。
+    pub fn sp_targets(&self) -> Option<&[SpTarget]> {
+        match self {
+            Self::Sp(e) => Some(e.targets()),
+            _ => None,
+        }
+    }
+
+    /// 双拼模式当前字的 字 / 拼音 / 编码；其余模式返回 `None`。
+    pub fn sp_current(&self) -> Option<(char, &'static str, [char; 2])> {
+        match self {
+            Self::Sp(e) => e.current(),
+            _ => None,
         }
     }
 }

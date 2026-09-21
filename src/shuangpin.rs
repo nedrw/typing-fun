@@ -183,6 +183,103 @@ pub fn key_at(key: char) -> Option<&'static Key> {
     XIAOHE.iter().find(|entry| entry.key == key)
 }
 
+/// 声母键：zh→v、ch→i、sh→u，其余声母就是字母本身。
+fn initial_key(initial: &str) -> Option<char> {
+    match initial {
+        "zh" => Some('v'),
+        "ch" => Some('i'),
+        "sh" => Some('u'),
+        _ => {
+            let mut chars = initial.chars();
+            match (chars.next(), chars.next()) {
+                (Some(c), None) if "bpmfdtnlgkhjqxrzcsyw".contains(c) => Some(c),
+                _ => None,
+            }
+        }
+    }
+}
+
+/// 韵母键（与 `XIAOHE` 表一致，ü 记成 v）。
+fn final_key(final_sound: &str) -> Option<char> {
+    Some(match final_sound {
+        "a" => 'a',
+        "o" => 'o',
+        "e" => 'e',
+        "i" => 'i',
+        "u" => 'u',
+        "v" => 'v',
+        "ai" => 'd',
+        "ei" => 'w',
+        "ao" => 'c',
+        "ou" => 'z',
+        "an" => 'j',
+        "en" => 'f',
+        "ang" => 'h',
+        "eng" => 'g',
+        "ong" => 's',
+        "er" => 'r',
+        "ia" => 'x',
+        "ie" => 'p',
+        "iao" => 'n',
+        "iu" => 'q',
+        "ian" => 'm',
+        "in" => 'b',
+        "iang" => 'l',
+        "ing" => 'k',
+        "iong" => 's',
+        "ua" => 'x',
+        "uo" => 'o',
+        "uai" => 'k',
+        "ui" => 'v',
+        "uan" => 'r',
+        "un" => 'y',
+        "uang" => 'l',
+        "ueng" => 'g',
+        "ue" => 't',
+        "ve" => 't',
+        "van" => 'r',
+        "vn" => 'y',
+        _ => return None,
+    })
+}
+
+/// 拼音（无调、ü 写成 v）→ 小鹤双拼的两键编码。
+///
+/// 零声母音节把首字母当声母键：安 an → `a j`、爱 ai → `a d`、儿 er → `e r`。
+/// 音节表覆盖不到的读音（呼 hm、唔 ng 等）返回 `None`，调用方可以选择丢弃。
+pub fn encode(pinyin: &str) -> Option<[char; 2]> {
+    let pinyin = pinyin.trim();
+    let (initial, final_sound) = split_syllable(pinyin);
+    if final_sound.is_empty() {
+        return None;
+    }
+    let first = if initial.is_empty() {
+        let first = final_sound.chars().next()?;
+        if !"aoe".contains(first) {
+            return None;
+        }
+        first
+    } else {
+        initial_key(initial)?
+    };
+    Some([first, final_key(final_sound)?])
+}
+
+/// 拆声母 / 韵母；零声母时声母为空串、韵母是整个音节。
+fn split_syllable(pinyin: &str) -> (&str, &str) {
+    for prefix in ["zh", "ch", "sh"] {
+        if let Some(rest) = pinyin.strip_prefix(prefix) {
+            return (prefix, rest);
+        }
+    }
+    if let Some(first) = pinyin.chars().next() {
+        if "bpmfdtnlgkhjqxrzcsyw".contains(first) {
+            return pinyin.split_at(first.len_utf8());
+        }
+    }
+    ("", pinyin)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -276,6 +373,57 @@ mod tests {
                 entry.key,
                 entry.mnemonic
             );
+        }
+    }
+
+    #[test]
+    fn known_pinyin_encodes_to_xiaohe() {
+        let encode = |pinyin| super::encode(pinyin);
+        assert_eq!(encode("zhong"), Some(['v', 's']));
+        assert_eq!(encode("de"), Some(['d', 'e']));
+        assert_eq!(encode("shuang"), Some(['u', 'l']));
+        assert_eq!(encode("ying"), Some(['y', 'k']));
+        assert_eq!(encode("wei"), Some(['w', 'w']));
+        assert_eq!(encode("ju"), Some(['j', 'u']));
+        assert_eq!(encode("jun"), Some(['j', 'y']));
+        assert_eq!(encode("jue"), Some(['j', 't']));
+        assert_eq!(encode("yuan"), Some(['y', 'r']));
+        assert_eq!(encode("nv"), Some(['n', 'v']));
+        assert_eq!(encode("lve"), Some(['l', 't']));
+    }
+
+    #[test]
+    fn zero_initial_syllables_prefix_the_letter() {
+        assert_eq!(super::encode("an"), Some(['a', 'j']));
+        assert_eq!(super::encode("ai"), Some(['a', 'd']));
+        assert_eq!(super::encode("ang"), Some(['a', 'h']));
+        assert_eq!(super::encode("er"), Some(['e', 'r']));
+        assert_eq!(super::encode("ou"), Some(['o', 'z']));
+        assert_eq!(super::encode("e"), Some(['e', 'e']));
+    }
+
+    #[test]
+    fn unknown_syllables_return_none() {
+        assert_eq!(super::encode(""), None);
+        assert_eq!(super::encode("ng"), None, "呼读音节没有双拼码");
+        assert_eq!(super::encode("m"), None);
+        assert_eq!(super::encode("zzz"), None);
+    }
+
+    /// 拼音表里除呼读音节（n / ng / m / hm / hng）外都必须能编码；
+    /// 表更新后如果有新韵母漏掉，这个测试会失败。
+    #[test]
+    fn pinyin_table_readings_are_encodable() {
+        use crate::pinyin::HANZI;
+        for (ch, readings) in HANZI {
+            for reading in readings.split(',') {
+                if super::encode(reading).is_none() {
+                    assert!(
+                        matches!(reading, "n" | "ng" | "m" | "hm" | "hng"),
+                        "{ch} 的读音 {reading} 没有双拼编码"
+                    );
+                }
+            }
         }
     }
 }
