@@ -75,7 +75,7 @@ pub fn base_key(ch: char) -> Option<char> {
 pub fn needs_shift(ch: char) -> bool {
     match ch {
         'A'..='Z' => true,
-        c => base_key(c).map_or(false, |b| b.is_ascii() && c != b),
+        c => base_key(c).is_some_and(|b| b.is_ascii() && c != b),
     }
 }
 
@@ -134,8 +134,8 @@ mod tests {
     #[test]
     fn uppercase_maps_to_letter_key() {
         assert_eq!(base_key('A'), Some('a'));
-        assert_eq!(needs_shift('A'), true);
-        assert_eq!(needs_shift('a'), false);
+        assert!(needs_shift('A'));
+        assert!(!needs_shift('a'));
         assert_eq!(finger_of('A'), finger_of('a'));
     }
 
@@ -145,8 +145,8 @@ mod tests {
         assert_eq!(base_key(':'), Some(';'));
         assert_eq!(base_key('_'), Some('-'));
         assert_eq!(base_key('"'), Some('\''));
-        assert_eq!(needs_shift('?'), true);
-        assert_eq!(needs_shift('/'), false);
+        assert!(needs_shift('?'));
+        assert!(!needs_shift('/'));
     }
 
     #[test]
