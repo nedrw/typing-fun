@@ -1,0 +1,58 @@
+name: Pages
+
+# 把网页版（trunk + WASM）部署到 GitHub Pages：
+# https://<owner>.github.io/<repo>/
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: pages
+
+      - name: 安装 trunk
+        run: cargo install --locked trunk
+
+      # 仓库子路径下资源要用绝对前缀，否则 Pages 上白屏
+      - name: 构建网页版
+        run: trunk build --release --public-url "/${{ github.event.repository.name }}/"
+
+      - name: 配置 Pages（未启用时自动开启 GitHub Actions 作为源）
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 部署到 Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

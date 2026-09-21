@@ -11,7 +11,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  # 纯逻辑测试与静态检查：不需要系统 WebView 依赖
+  # 纯逻辑测试与静态检查：只编译 UI crate，不需要系统 WebView 依赖
   test:
     runs-on: ubuntu-22.04
     steps:
@@ -24,31 +24,26 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: 安装 Linux 系统依赖
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
-            build-essential curl wget file libxdo-dev libssl-dev \
-            libayatana-appindicator3-dev
-
       - run: cargo fmt --check
       - run: cargo clippy -p typing-fun-ui --all-targets
       - run: cargo test -p typing-fun-ui
       - run: cargo check -p typing-fun-ui --target wasm32-unknown-unknown
 
-  # 三个平台的安装包构建；推 tag（v*）时由 tauri-action 建草稿 release
+  # 三平台安装包；推 tag（v*）时由 tauri-action 建草稿 release
   build:
     needs: test
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Intel Mac 需要 macos-13；想在 Apple Silicon 上本地构建则用 macos-latest
+          # Apple Silicon 原生构建
           - platform: macos-latest
             target: aarch64-apple-darwin
             bundles: dmg
-          - platform: macos-13
+          # Intel 版由 arm64 runner 交叉编译（macos-13 已退役）
+          - platform: macos-latest
             target: x86_64-apple-darwin
             bundles: dmg
           - platform: ubuntu-22.04
@@ -67,14 +62,14 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      # Tauri v2 官方依赖列表：不要再用 libappindicator3-dev（与 ayatana 冲突）
       - name: 安装 Linux 系统依赖
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
-            build-essential curl wget file libxdo-dev libssl-dev \
-            libayatana-appindicator3-dev
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            patchelf build-essential curl wget file libxdo-dev libssl-dev
 
       - name: 安装 trunk 与 tauri-cli（rust-cache 会缓存二进制）
         run: cargo install --locked trunk tauri-cli
@@ -96,6 +91,6 @@ jobs:
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         uses: actions/upload-artifact@v4
         with:
-          name: bundles-${{ matrix.platform }}
+          name: bundles-${{ matrix.platform }}-${{ matrix.target }}
           path: target/**/release/bundle/**
           if-no-files-found: error
