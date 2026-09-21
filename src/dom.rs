@@ -56,3 +56,32 @@ impl Drop for KeyListener {
             .remove_event_listener_with_callback("keydown", self.cb.as_ref().unchecked_ref());
     }
 }
+
+/// window 上的输入法组词监听（`compositionstart`），drop 时自动移除。
+///
+/// 英文练习里组词意味着用户在中文输入法下敲键，这些击键不该计入统计。
+pub struct CompositionListener {
+    target: web_sys::EventTarget,
+    cb: Closure<dyn FnMut(web_sys::CompositionEvent)>,
+}
+
+impl CompositionListener {
+    pub fn new(cb: impl FnMut(web_sys::CompositionEvent) + 'static) -> Option<Self> {
+        let window = web_sys::window()?;
+        let target: web_sys::EventTarget = window.unchecked_into();
+        let cb: Closure<dyn FnMut(web_sys::CompositionEvent)> = Closure::new(cb);
+        target
+            .add_event_listener_with_callback("compositionstart", cb.as_ref().unchecked_ref())
+            .ok()?;
+        Some(Self { target, cb })
+    }
+}
+
+impl Drop for CompositionListener {
+    fn drop(&mut self) {
+        let _ = self.target.remove_event_listener_with_callback(
+            "compositionstart",
+            self.cb.as_ref().unchecked_ref(),
+        );
+    }
+}

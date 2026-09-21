@@ -6,7 +6,7 @@
 use leptos::prelude::*;
 use wasm_bindgen::prelude::*;
 
-use crate::dom::{KeyListener, Ticker};
+use crate::dom::{CompositionListener, KeyListener, Ticker};
 use crate::engine::ErrorMode;
 use crate::history::history_view;
 use crate::keyboard::virtual_keyboard;
@@ -163,6 +163,24 @@ fn user_material_id() -> String {
     format!("user-{}", js_sys::Date::now() as u64)
 }
 
+/// 把文件内容解成文本：先按 UTF-8 严格解，失败再按 GB18030 试。
+///
+/// 中文用户手头的 txt 很多是 Windows 记事本存的 GBK/GB18030，
+/// 直接按 UTF-8 松解码会得到一堆替换字符。
+fn decode_text(buffer: &js_sys::ArrayBuffer) -> Option<String> {
+    let strict = web_sys::TextDecoderOptions::new();
+    strict.set_fatal(true);
+    if let Ok(decoder) = web_sys::TextDecoder::new_with_label_and_options("utf-8", &strict) {
+        if let Ok(text) = decoder.decode_with_buffer_source(buffer) {
+            return Some(text);
+        }
+    }
+    web_sys::TextDecoder::new_with_label("gb18030")
+        .ok()?
+        .decode_with_buffer_source(buffer)
+        .ok()
+}
+
 /// 从素材池里挑一段。素材池为空时退回到同语言的第一课。
 fn draw_segment(all: &[Material], lang: Lang, seed: u64, shuangpin: bool) -> String {
     let target = if shuangpin || lang == Lang::Zh {
@@ -194,7 +212,6 @@ pub fn App() -> impl IntoView {
     let route = RwSignal::new(Route::Home);
     let cursor = RwSignal::new(0usize);
     let tab = RwSignal::new(Lang::En);
-    let mode = RwSignal::new(ErrorMode::StopOnError);
     let session = RwSignal::new(Session::new("", Lang::En, ErrorMode::StopOnError));
     let source = RwSignal::new(Source::Material {
         lang: Lang::En,
@@ -213,15 +230,25 @@ pub fn App() -> impl IntoView {
     });
     let name_input = RwSignal::new(String::new());
     let text_input = RwSignal::new(String::new());
+    // 英文练习里检测到输入法组词时给出的提示
+    let ime_notice = RwSignal::new(false);
     // 每次开始练习换一个种子，避免每次都是同一段
     let seed = RwSignal::new(0x9E37_79B9_7F4A_7C15u64);
     let now = RwSignal::new(js_sys::Date::now());
     let input_ref = NodeRef::<leptos::html::Input>::new();
     let file_ref = NodeRef::<leptos::html::Input>::new();
+    let text_ref = NodeRef::<leptos::html::Div>::new();
 
     let stats = Memo::new(move |_| session.with(|s| s.stats(now.get())));
     let session_lang = move || source.with(|s| s.lang());
     let is_zh = move || session_lang() == Lang::Zh;
+
+    // 英文练习里检测到输入法组词：说明用户在中文输入法下敲键，提示切回英文键盘
+    let _composition = StoredValue::new_local(CompositionListener::new(move |_| {
+        if route.get_untracked() == Route::Practice && !is_zh() {
+            ime_notice.set(true);
+        }
+    }));
 
     // ---------- 中文课：输入框是唯一输入通道 ----------
     let focus_input = move || {
@@ -243,7 +270,9 @@ pub fn App() -> impl IntoView {
         seed.update(|s| *s = next_seed(*s));
         let lesson = &LESSONS[index];
         let text = lesson.generate(seed.get_untracked());
-        session.set(Session::new(&text, lesson.lang, mode.get_untracked()));
+        // 指法课要求打对当前字符才能前进
+        session.set(Session::new(&text, lesson.lang, ErrorMode::StopOnError));
+        ime_notice.set(false);
         source.set(Source::Lesson(index));
         test_limit.set(None);
         shuangpin_mode.set(false);
@@ -264,7 +293,15 @@ pub fn App() -> impl IntoView {
                 ..
             }
         );
-        session.set(Session::new(&text, lang, mode.get_untracked()));
+        // 素材练习与限时测试面向速度：打错照常前进、可退格修正；
+        // 指法课则要求打对当前字符（见 start_lesson）
+        let error_mode = if matches!(src, Source::Lesson(_)) {
+            ErrorMode::StopOnError
+        } else {
+            ErrorMode::Continue
+        };
+        session.set(Session::new(&text, lang, error_mode));
+        ime_notice.set(false);
         source.set(src);
         test_limit.set(limit);
         shuangpin_mode.set(shuangpin);
@@ -421,7 +458,10 @@ pub fn App() -> impl IntoView {
                 let Ok(result) = done_reader.result() else {
                     return;
                 };
-                let Some(text) = result.as_string() else {
+                let Some(buffer) = result.dyn_into::<js_sys::ArrayBuffer>().ok() else {
+                    return;
+                };
+                let Some(text) = decode_text(&buffer) else {
                     return;
                 };
                 if text.trim().is_empty() {
@@ -442,7 +482,7 @@ pub fn App() -> impl IntoView {
             reader.set_onloadend(Some(on_done.as_ref().unchecked_ref()));
             // 一次性回调：导入是低频操作，读完就丢给浏览器回收
             on_done.forget();
-            let _ = reader.read_as_text(&file);
+            let _ = reader.read_as_array_buffer(&file);
         }
         // 清空，方便重复导入同一个文件
         input.set_value("");
@@ -632,6 +672,16 @@ pub fn App() -> impl IntoView {
         }
     });
 
+    // 列表变化（删素材、切语言）后把高亮游标收回范围内
+    Effect::new(move |_| {
+        let len = items.get().len();
+        cursor.update(|c| {
+            if *c >= len {
+                *c = len.saturating_sub(1);
+            }
+        });
+    });
+
     // ---------- 键盘 ----------
     let _listener = StoredValue::new_local(KeyListener::new(move |ev: web_sys::KeyboardEvent| {
         if ev.ctrl_key() || ev.meta_key() || ev.alt_key() {
@@ -641,7 +691,13 @@ pub fn App() -> impl IntoView {
 
         if route.get_untracked() == Route::Practice {
             match key.as_str() {
-                "Escape" => back(),
+                // 输入法组词中 Esc 是「取消候选」，不能顺手退出练习
+                "Escape" => {
+                    if ev.is_composing() {
+                        return;
+                    }
+                    back()
+                }
                 "Backspace" => {
                     if !is_zh() {
                         ev.prevent_default();
@@ -651,6 +707,11 @@ pub fn App() -> impl IntoView {
                 _ => {
                     // 中文与双拼的字符交给输入法和输入框
                     if is_zh() {
+                        return;
+                    }
+                    // 输入法正在组词（或系统把按键标成 Process）：不该计入英文练习
+                    if ev.is_composing() || key == "Process" {
+                        ime_notice.set(true);
                         return;
                     }
                     let mut chars = key.chars();
@@ -779,6 +840,20 @@ pub fn App() -> impl IntoView {
                 .collect_view()
         })
     };
+
+    // 练习文本自动跟随游标：限时测试会不断续段，不跟随的话游标很快滚出视口
+    Effect::new(move |_| {
+        let _ = session.with(|s| s.cursor());
+        let Some(container) = text_ref.get() else {
+            return;
+        };
+        let Some(cur) = container.query_selector(".ch.cursor").ok().flatten() else {
+            return;
+        };
+        let options = web_sys::ScrollIntoViewOptions::new();
+        options.set_block(web_sys::ScrollLogicalPosition::Nearest);
+        cur.scroll_into_view_with_scroll_into_view_options(&options);
+    });
 
     let menu = move || {
         let list = items.get();
@@ -950,7 +1025,7 @@ pub fn App() -> impl IntoView {
                 }
 
                 Route::History => {
-                    history_view(records, move || back()).into_any()
+                    history_view(records, back).into_any()
                 }
 
                 Route::Practice => {
@@ -1015,9 +1090,20 @@ pub fn App() -> impl IntoView {
                                 }></i>
                             </div>
 
-                            <div class=move || if is_zh() { "text zh" } else { "text" }>{text_spans}</div>
+                            <div node_ref=text_ref class=move || if is_zh() { "text zh" } else { "text" }>{text_spans}</div>
 
                             <div class="hint">{hint}</div>
+                            {move || {
+                                ime_notice
+                                    .get()
+                                    .then(|| {
+                                        view! {
+                                            <p class="warn">
+                                                "检测到输入法正在组词：英文练习请先切回英文键盘（macOS 可用 Caps Lock 或 ⌃Space），组词中的击键不会被计入。"
+                                            </p>
+                                        }
+                                    })
+                            }}
 
                             {move || if is_zh() {
                                 view! {
