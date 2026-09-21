@@ -12,9 +12,12 @@
   "app": {
     "windows": [
       {
-        "title": "typing-fun",
-        "width": 800,
-        "height": 600
+        "title": "TT 打字训练",
+        "width": 980,
+        "height": 760,
+        "minWidth": 760,
+        "minHeight": 560,
+        "center": true
       }
     ],
     "security": {
