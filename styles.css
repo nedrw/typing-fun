@@ -196,23 +196,9 @@ button {
 
 /* ---------- 火力条 ---------- */
 
-.heat-row {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    margin: -0.35rem 0 0.9rem;
-}
-
-.heat-label {
-    flex: none;
-    color: var(--dim);
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-}
-
 .heat {
     position: relative;
-    flex: 1;
+    margin: -0.35rem 0 0.9rem;
     height: 0.5rem;
     background: var(--panel);
     border: 1px solid var(--line);

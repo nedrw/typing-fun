@@ -318,24 +318,6 @@ pub fn App() -> impl IntoView {
     // 爆发状态：满格进入，跌破 BURST_EXIT 才退出（滞回）
     let burst = RwSignal::new(false);
     let speed = RwSignal::new(heat::SpeedWindow::new(2_500.0));
-    let add_heat = move |correct: usize, mistakes: usize, at_ms: f64| {
-        if correct > 0 {
-            speed.update(|w| {
-                for _ in 0..correct {
-                    w.note(at_ms);
-                }
-            });
-        }
-        heat.update(|h| *h = heat::charge(*h, correct, mistakes));
-        if heat.with_untracked(|h| heat::is_full(*h)) {
-            burst.set(true);
-        }
-    };
-    let reset_heat = move || {
-        heat.set(0.0);
-        burst.set(false);
-        speed.update(|w| w.clear());
-    };
     let input_ref = NodeRef::<leptos::html::Input>::new();
     let file_ref = NodeRef::<leptos::html::Input>::new();
     let text_ref = NodeRef::<leptos::html::Div>::new();
@@ -347,6 +329,35 @@ pub fn App() -> impl IntoView {
     let is_sp = move || matches!(source.get(), Source::Shuangpin { .. });
     // 只有中文输入法模式需要输入框
     let uses_input_field = move || is_zh() && !is_sp();
+    // 中英文速度量级不同（英文按击键、中文按字、双拼一字两键），手感参数按模式选
+    let heat_profile = move || {
+        if is_sp() {
+            heat::SP
+        } else if is_zh() {
+            heat::ZH
+        } else {
+            heat::EN
+        }
+    };
+    let add_heat = move |correct: usize, mistakes: usize, at_ms: f64| {
+        let profile = heat_profile();
+        if correct > 0 {
+            speed.update(|w| {
+                for _ in 0..correct {
+                    w.note(at_ms);
+                }
+            });
+        }
+        heat.update(|h| *h = profile.charge(*h, correct, mistakes));
+        if heat.with_untracked(|h| heat::is_full(*h)) {
+            burst.set(true);
+        }
+    };
+    let reset_heat = move || {
+        heat.set(0.0);
+        burst.set(false);
+        speed.update(|w| w.clear());
+    };
 
     // 英文练习里检测到输入法组词：说明用户在中文输入法下敲键，提示切回英文键盘
     let _composition = StoredValue::new_local(CompositionListener::new(move |_| {
@@ -547,7 +558,8 @@ pub fn App() -> impl IntoView {
             return;
         }
         // 火力随时间衰减（衰减速率随蓄力上升），即时速度窗口同时收缩
-        heat.update(|h| *h = heat::decay(*h, 0.1));
+        let profile = heat_profile();
+        heat.update(|h| *h = profile.decay(*h, 0.1));
         if heat.with_untracked(|h| *h < heat::BURST_EXIT) {
             burst.set(false);
         }
@@ -1412,7 +1424,8 @@ pub fn App() -> impl IntoView {
 
                             {move || {
                                 let h = heat.get();
-                                let power = heat::burst_power(speed.with(|w| w.cpm()));
+                                let profile = heat_profile();
+                                let power = profile.burst_power(speed.with(|w| w.cpm()));
                                 let full = burst.get();
                                 let class = if full { "heat full" } else { "heat" };
                                 // 蓄力越高越鲜艳；爆发强度（速度）控制辉光、火花距离与动画快慢
@@ -1429,14 +1442,14 @@ pub fn App() -> impl IntoView {
                                     h * 100.0,
                                     h * 100.0,
                                 );
+                                // 没标签了，用悬浮提示说明玩法与「压满线」
+                                let unit = if is_zh() && !is_sp() { "字" } else { "键" };
+                                let fill_cpm = profile.decay_max / profile.gain * 60.0;
+                                let title = format!(
+                                    "打字蓄力：满格爆发，速度越快特效越强（约 {fill_cpm:.0} {unit}/分可压满）",
+                                );
                                 view! {
-                                    <div class="heat-row">
-                                        <span class="heat-label">"火力"</span>
-                                        <div
-                                            class=class
-                                            style=style
-                                            title="打字蓄力：满格爆发，速度越快特效越强"
-                                        >
+                                    <div class=class style=style title=title>
                                             <i style=fill></i>
                                             {full
                                                 .then(|| {
@@ -1447,7 +1460,6 @@ pub fn App() -> impl IntoView {
                                                         .collect_view()
                                                 })}
                                         </div>
-                                    </div>
                                 }
                             }}
 
