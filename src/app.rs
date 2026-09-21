@@ -399,7 +399,6 @@ pub fn App() -> impl IntoView {
         // 指法课要求打对当前字符才能前进
         session.set(Session::new(&text, lesson.lang, ErrorMode::StopOnError));
         ime_notice.set(false);
-        reset_heat();
         if lesson.lang == Lang::Zh {
             zh_mode.set(ZhMode::Ime);
         }
@@ -432,7 +431,6 @@ pub fn App() -> impl IntoView {
         };
         session.set(Session::new(&text, lang, error_mode));
         ime_notice.set(false);
-        reset_heat();
         source.set(src);
         test_limit.set(limit);
         shuangpin_mode.set(shuangpin);
@@ -501,7 +499,6 @@ pub fn App() -> impl IntoView {
         // 面向速度：打错自动补上期望键继续，错误计入正确率
         session.set(Session::shuangpin(&text, ErrorMode::Continue));
         ime_notice.set(false);
-        reset_heat();
         source.set(Source::Shuangpin { secs, material_id });
         test_limit.set(secs);
         shuangpin_mode.set(false);
@@ -692,10 +689,19 @@ pub fn App() -> impl IntoView {
             route.set(target);
             cursor.set(0);
         }
-        Action::Lesson(index) => start_lesson(index),
-        Action::Segment { shuangpin } => start_segment(tab.get_untracked(), shuangpin, None),
+        // 从菜单选新的练习：火力归零；「再来一次」（Action::Restart）不归零，
+        // 让连续几轮接得上（限时测试中途续段本来也保留）
+        Action::Lesson(index) => {
+            reset_heat();
+            start_lesson(index);
+        }
+        Action::Segment { shuangpin } => {
+            reset_heat();
+            start_segment(tab.get_untracked(), shuangpin, None);
+        }
         // 素材页选素材：中文素材按最近一次的中文模式分流到输入法 / 双拼键位
         Action::PracticeMaterial(id) => {
+            reset_heat();
             let zh_shuangpin = all_materials
                 .with_untracked(|all| all.iter().any(|m| m.id == id && m.lang == Lang::Zh))
                 && zh_mode.get_untracked() == ZhMode::Shuangpin;
@@ -705,8 +711,14 @@ pub fn App() -> impl IntoView {
                 start_material(id);
             }
         }
-        Action::Test(secs) => start_segment(tab.get_untracked(), false, Some(secs)),
-        Action::Shuangpin { secs } => start_shuangpin(secs, None),
+        Action::Test(secs) => {
+            reset_heat();
+            start_segment(tab.get_untracked(), false, Some(secs));
+        }
+        Action::Shuangpin { secs } => {
+            reset_heat();
+            start_shuangpin(secs, None);
+        }
         Action::Import => {
             if let Some(input) = file_ref.get() {
                 input.click();
