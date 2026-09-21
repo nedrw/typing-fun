@@ -225,30 +225,29 @@ impl SpEngine {
     }
 }
 
+/// 某个字的展示读音与可用编码；没有可编码的读音（呼读音节、非汉字）返回 `None`。
+fn codes_for(ch: char) -> Option<(&'static str, Vec<[char; 2]>)> {
+    let readings = pinyin::readings(ch)?;
+    let mut codes: Vec<[char; 2]> = Vec::new();
+    let mut shown: Option<&'static str> = None;
+    for reading in readings.split(',') {
+        if let Some(code) = shuangpin::encode(reading) {
+            shown.get_or_insert(reading);
+            if !codes.contains(&code) {
+                codes.push(code);
+            }
+        }
+    }
+    Some((shown?, codes))
+}
+
 /// 把一段文本转成目标格：丢掉没有读音或没有编码的字符。
 fn parse_targets(text: &str) -> Vec<SpTarget> {
     text.chars()
         .filter(|c| !c.is_whitespace())
         .filter_map(|ch| {
-            let readings = pinyin::readings(ch)?;
-            let mut codes: Vec<[char; 2]> = Vec::new();
-            let mut shown: Option<&'static str> = None;
-            for reading in readings.split(',') {
-                let Some(code) = shuangpin::encode(reading) else {
-                    continue;
-                };
-                if shown.is_none() {
-                    shown = Some(reading);
-                }
-                if !codes.contains(&code) {
-                    codes.push(code);
-                }
-            }
-            Some(SpTarget {
-                ch,
-                pinyin: shown?,
-                codes,
-            })
+            let (pinyin, codes) = codes_for(ch)?;
+            Some(SpTarget { ch, pinyin, codes })
         })
         .collect()
 }
@@ -343,7 +342,8 @@ mod tests {
         assert_eq!(SpEngine::new("，。！", ErrorMode::Continue).len(), 0);
     }
 
-    /// 随包中文素材与中文课程里的字都必须能按键打出来（标点会被丢掉）。
+    /// 随包中文素材与中文课程里「有可编码读音」的字都不能被丢掉
+    /// （呼读音节没有编码，允许跳过）。
     #[test]
     fn bundled_chinese_text_is_fully_convertible() {
         use crate::bundled::BUNDLED;
@@ -360,15 +360,19 @@ mod tests {
                     .map(|lesson| lesson.generate(7)),
             );
         for text in texts {
-            let hanzi_with_reading = text
-                .chars()
-                .filter(|&c| pinyin::readings(c).is_some())
-                .count();
-            assert_eq!(
-                parse_targets(&text).len(),
-                hanzi_with_reading,
-                "有汉字拿不到双拼编码：{text}"
-            );
+            let typable = text.chars().filter(|&c| codes_for(c).is_some()).count();
+            assert_eq!(parse_targets(&text).len(), typable, "有可编码的汉字被丢掉");
         }
+    }
+
+    #[test]
+    fn syllabic_nasals_have_no_code() {
+        assert!(codes_for('中').is_some());
+        assert!(
+            codes_for('行').is_some(),
+            "多音字只要一个读音能编码就算可用"
+        );
+        assert!(codes_for('嗯').is_none());
+        assert!(codes_for('a').is_none());
     }
 }

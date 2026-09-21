@@ -50,6 +50,12 @@ fn normalize_punct(c: char) -> char {
         '(' => '（',
         ')' => '）',
         '、' => '，',
+        // 引号、书名号、破折号：不同输入法/素材版本的常见变体统一到一个字符
+        '"' | '”' | '「' | '」' => '“',
+        '\'' | '’' | '『' | '』' => '‘',
+        '<' | '《' => '《',
+        '>' | '》' => '》',
+        '-' | '–' | '—' | '－' => '—',
         other => other,
     }
 }
@@ -64,6 +70,17 @@ mod tests {
         assert!(same_char('。', '.'));
         assert!(same_char('？', '?'));
         assert!(same_char('打', '打'));
+    }
+
+    #[test]
+    fn quote_and_dash_variants_are_equivalent() {
+        assert!(same_char('"', '“'));
+        assert!(same_char('“', '」'), "弯引号与直角引号都算对");
+        assert!(same_char('\'', '’'));
+        assert!(same_char('-', '—'));
+        assert!(same_char('–', '—'));
+        assert!(same_char('<', '《'));
+        assert!(same_char('>', '》'));
     }
 
     #[test]
