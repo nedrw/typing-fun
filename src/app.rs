@@ -291,6 +291,9 @@ pub fn App() -> impl IntoView {
     let test_limit = RwSignal::new(None::<u32>);
     // 中文输入法练习页是否展开小鹤双拼键位表（UI 状态，可随时切换）
     let keymap = RwSignal::new(false);
+    // 就地输入：输入法预编辑（拼音串）直接画在正文里，透明输入框跟随光标字符
+    let preedit = RwSignal::new(String::new());
+    let input_pos = RwSignal::new((0.0f64, 0.0f64));
     let records = RwSignal::new(Vec::<Record>::new());
     let user_materials = RwSignal::new(Vec::<Material>::new());
     let storage_error = RwSignal::new(None::<String>);
@@ -414,6 +417,7 @@ pub fn App() -> impl IntoView {
         }
     };
     let clear_input = move || {
+        preedit.set(String::new());
         if let Some(input) = input_ref.get() {
             input.set_value("");
         }
@@ -429,6 +433,24 @@ pub fn App() -> impl IntoView {
             if let Some(input) = input_ref.get() {
                 let _ = input.focus();
             }
+        }
+    });
+
+    // 让透明输入框贴着正文里的光标字符：预编辑、输入法候选窗都跟着走
+    Effect::new(move |_| {
+        let _ = session.with(|s| s.cursor());
+        let _ = preedit.get();
+        if !uses_input_field() {
+            return;
+        }
+        let Some(container) = text_ref.get() else {
+            return;
+        };
+        let Some(cursor_el) = container.query_selector(".ch.cursor").ok().flatten() else {
+            return;
+        };
+        if let Ok(el) = cursor_el.dyn_into::<web_sys::HtmlElement>() {
+            input_pos.set((el.offset_top() as f64, el.offset_left() as f64));
         }
     });
 
@@ -707,10 +729,18 @@ pub fn App() -> impl IntoView {
             .dyn_ref::<web_sys::InputEvent>()
             .is_some_and(web_sys::InputEvent::is_composing);
         if !composing {
+            preedit.set(String::new());
             sync_from_input();
         }
     };
-    let on_cn_commit = move |_ev: web_sys::CompositionEvent| sync_from_input();
+    let on_cn_composition = move |ev: web_sys::CompositionEvent| {
+        // 输入法正在组词：把拼音串画在正文光标处
+        preedit.set(ev.data().unwrap_or_default());
+    };
+    let on_cn_commit = move |_ev: web_sys::CompositionEvent| {
+        preedit.set(String::new());
+        sync_from_input();
+    };
 
     // ---------- 素材导入 ----------
     let on_files = move |_ev: web_sys::Event| {
@@ -1175,27 +1205,43 @@ pub fn App() -> impl IntoView {
     };
 
     let text_spans = move || {
+        let composing_text = preedit.get();
         session.with(|s| {
             let cursor = s.cursor();
             let mistake = s.mistake_at();
-            s.target()
-                .iter()
-                .enumerate()
-                .map(|(i, &ch)| {
-                    let mut class = String::from("ch");
-                    match s.state_at(i) {
-                        CharState::Todo => {}
-                        CharState::Done => class.push_str(" done"),
-                        CharState::Wrong => class.push_str(" wrong"),
-                    }
-                    if mistake == Some(i) {
-                        class.push_str(" flash");
-                    } else if i == cursor {
-                        class.push_str(" cursor");
-                    }
-                    view! { <span class=class>{ch.to_string()}</span> }
-                })
-                .collect_view()
+            let target = s.target();
+            let mut spans: Vec<AnyView> = Vec::new();
+            let push_preedit = |spans: &mut Vec<AnyView>| {
+                if !composing_text.is_empty() {
+                    spans.push(
+                        view! { <span class="preedit">{composing_text.clone()}</span> }.into_any(),
+                    );
+                }
+            };
+            if cursor == 0 {
+                push_preedit(&mut spans);
+            }
+            for (i, &ch) in target.iter().enumerate() {
+                if i == cursor {
+                    push_preedit(&mut spans);
+                }
+                let mut class = String::from("ch");
+                match s.state_at(i) {
+                    CharState::Todo => {}
+                    CharState::Done => class.push_str(" done"),
+                    CharState::Wrong => class.push_str(" wrong"),
+                }
+                if mistake == Some(i) {
+                    class.push_str(" flash");
+                } else if i == cursor {
+                    class.push_str(" cursor");
+                }
+                spans.push(view! { <span class=class>{ch.to_string()}</span> }.into_any());
+            }
+            if cursor >= target.len() {
+                push_preedit(&mut spans);
+            }
+            spans
         })
     };
 
@@ -1626,6 +1672,24 @@ pub fn App() -> impl IntoView {
                                     >
                                         {move || if is_sp() { sp_cells() } else { text_spans().into_any() }}
                                         {move || {
+                                            uses_input_field()
+                                                .then(|| {
+                                                    view! {
+                                                        <input
+                                                            node_ref=input_ref
+                                                            class="cn-inline-input"
+                                                            on:input=on_cn_input
+                                                            on:compositionupdate=on_cn_composition
+                                                            on:compositionend=on_cn_commit
+                                                            style=move || {
+                                                                let (top, left) = input_pos.get();
+                                                                format!("top:{top:.0}px;left:{left:.0}px")
+                                                            }
+                                                        />
+                                                    }
+                                                })
+                                        }}
+                                        {move || {
                                             upcoming
                                                 .get()
                                                 .map(|text| {
@@ -1674,34 +1738,27 @@ pub fn App() -> impl IntoView {
                                     })
                             }}
 
-                            {move || if uses_input_field() {
-                                view! {
-                                    <div class="cn-panel">
-                                        <input
-                                            node_ref=input_ref
-                                            placeholder="在这里用输入法打字"
-                                            on:input=on_cn_input
-                                            on:compositionend=on_cn_commit
-                                        />
-                                        {move || {
-                                            if keymap.get() {
-                                                view! { <div class="sp-ref">{shuangpin_ref()}</div> }
-                                                    .into_any()
-                                            } else {
-                                                view! {
-                                                    <p class="cn-tip">
-                                                        "用系统输入法输入上面的文字；打错的字会标红，改对即可；Tab 换一段"
-                                                    </p>
-                                                }
-                                                    .into_any()
-                                            }
-                                        }}
-                                    </div>
-                                }
-                                    .into_any()
-                            } else {
-                                view! {
-                                    <div class="keys-panel">
+                            {move || {
+                                if uses_input_field() {
+                                    // 中文：输入框已内嵌在正文里，这里只放键位表或提示
+                                    if keymap.get() {
+                                        view! {
+                                            <div class="cn-panel">
+                                                <div class="sp-ref">{shuangpin_ref()}</div>
+                                            </div>
+                                        }
+                                            .into_any()
+                                    } else {
+                                        view! {
+                                            <p class="cn-tip">
+                                                "直接用输入法在正文上打字；打错的字会标红，Tab 换一段"
+                                            </p>
+                                        }
+                                            .into_any()
+                                    }
+                                } else {
+                                    view! {
+                                        <div class="keys-panel">
                                         {virtual_keyboard(move || session.with(|s| s.expected()))}
                                         <div class="legend">
                                             {[
@@ -1731,6 +1788,7 @@ pub fn App() -> impl IntoView {
                                     </div>
                                 }
                                     .into_any()
+                                }
                             }}
                         </section>
                     }
