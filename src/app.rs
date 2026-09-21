@@ -364,6 +364,8 @@ pub fn App() -> impl IntoView {
     let upcoming = RwSignal::new(None::<String>);
     // 切换动画的截止时间（时间戳，超过就不再挂 swap 类）
     let swap_until = RwSignal::new(0.0f64);
+    // 切换动画的起始下移距离（按「下一段预览」的实际高度测出来）
+    let swap_from = RwSignal::new(28.0f64);
     // 火力条：打字蓄力、随时间衰减；爆发强度用最近 2.5 秒的即时速度
     let heat = RwSignal::new(0.0f64);
     // 爆发状态：满格进入，跌破 BURST_EXIT 才退出（滞回）
@@ -644,8 +646,16 @@ pub fn App() -> impl IntoView {
     let advance = move || {
         let _ = record_current();
         let now_ms = js_sys::Date::now();
+        // 新一段从预览块所在的位置升上来：量一下预览的高度
+        let offset = text_ref
+            .get()
+            .and_then(|el| el.query_selector(".upcoming").ok().flatten())
+            .and_then(|el| el.dyn_into::<web_sys::HtmlElement>().ok())
+            .map(|el| el.offset_height() as f64)
+            .unwrap_or(0.0);
+        swap_from.set((offset + 14.0).max(28.0));
         advance_note_until.set(now_ms + 1_200.0);
-        swap_until.set(now_ms + 360.0);
+        swap_until.set(now_ms + 720.0);
         next_segment();
     };
 
@@ -1614,32 +1624,41 @@ pub fn App() -> impl IntoView {
                             <div class="text-box">
                                 <div
                                     node_ref=text_ref
-                                    class=move || {
-                                        let mut class = match (is_zh(), is_sp()) {
-                                            (_, true) => "text zh sp",
-                                            (true, false) => "text zh",
-                                            _ => "text",
-                                        }
-                                        .to_string();
-                                        if now.get() < swap_until.get() {
-                                            class.push_str(" swap");
-                                        }
-                                        class
+                                    class=move || match (is_zh(), is_sp()) {
+                                        (_, true) => "text zh sp",
+                                        (true, false) => "text zh",
+                                        _ => "text",
                                     }
                                 >
-                                    {move || if is_sp() { sp_cells() } else { text_spans().into_any() }}
-                                    {move || {
-                                        upcoming
-                                            .get()
-                                            .map(|text| {
-                                                view! {
-                                                    <div class="upcoming">
-                                                        <span class="upcoming-label">"下一段"</span>
-                                                        {text}
-                                                    </div>
-                                                }
-                                            })
-                                    }}
+                                    <div
+                                        class=move || {
+                                            let mut class = if is_sp() {
+                                                "text-inner sp"
+                                            } else {
+                                                "text-inner"
+                                            }
+                                            .to_string();
+                                            if now.get() < swap_until.get() {
+                                                class.push_str(" swap");
+                                            }
+                                            class
+                                        }
+                                        style=move || format!("--swap-from:{:.0}px", swap_from.get())
+                                    >
+                                        {move || if is_sp() { sp_cells() } else { text_spans().into_any() }}
+                                        {move || {
+                                            upcoming
+                                                .get()
+                                                .map(|text| {
+                                                    view! {
+                                                        <div class="upcoming">
+                                                            <span class="upcoming-label">"下一段"</span>
+                                                            {text}
+                                                        </div>
+                                                    }
+                                                })
+                                        }}
+                                    </div>
                                 </div>
                                 <button
                                     class="text-refresh"

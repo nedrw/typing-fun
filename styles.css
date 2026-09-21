@@ -308,7 +308,7 @@ button {
     }
 
     .upcoming,
-    .text.swap {
+    .text-inner.swap {
         animation: none;
     }
 }
@@ -347,6 +347,9 @@ button {
     color: var(--dim);
     opacity: 0.55;
     animation: upcoming-in 0.5s ease-out;
+    /* Sp 的 flex 排版里也要占满一整行 */
+    flex-basis: 100%;
+    width: 100%;
 }
 
 .upcoming-label {
@@ -368,20 +371,24 @@ button {
     }
 }
 
-/* 切到下一段时的入场动画 */
-.text.swap {
-    animation: swap-in 0.34s ease-out;
+/* 切到下一段：内容层从「下一段预览」的位置升上来（不闪，打字仍可读） */
+.text-inner.swap {
+    animation: swap-rise var(--swap-dur, 0.7s) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@keyframes swap-in {
+@keyframes swap-rise {
     from {
-        opacity: 0.35;
-        transform: translateY(0.7rem);
+        transform: translateY(var(--swap-from, 2rem));
+        opacity: 0.75;
+    }
+
+    35% {
+        opacity: 1;
     }
 
     to {
-        opacity: 1;
         transform: none;
+        opacity: 1;
     }
 }
 
@@ -453,11 +460,15 @@ button {
 /* 双拼键位练习：一个字一格，拼音与编码在字下方 */
 
 .text.sp {
+    line-height: normal;
+}
+
+/* Sp 的每字一格排版放在内容层上（外层负责滚动、内层负责动画） */
+.text-inner.sp {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
     gap: 0.15rem 0.1rem;
-    line-height: normal;
 }
 
 .sp-cell {
