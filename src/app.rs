@@ -38,7 +38,6 @@ enum Source {
     Lesson(usize),
     Material {
         lang: Lang,
-        shuangpin: bool,
         /// 指定素材时固定用这一段，否则从素材池随机
         material_id: Option<String>,
     },
@@ -70,19 +69,9 @@ impl Source {
                 let lesson = &LESSONS[*index];
                 (lesson.id.to_string(), lesson.title.to_string(), lesson.lang)
             }
-            Source::Material {
-                lang, shuangpin, ..
-            } => (
-                format!(
-                    "{}-material{}",
-                    lang_tag(*lang),
-                    if *shuangpin { "-sp" } else { "" }
-                ),
-                format!(
-                    "{}素材练习{}",
-                    lang.name(),
-                    if *shuangpin { "（双拼）" } else { "" }
-                ),
+            Source::Material { lang, .. } => (
+                format!("{}-material", lang_tag(*lang)),
+                format!("{}素材练习", lang.name()),
                 *lang,
             ),
             Source::Test { lang, secs } => (
@@ -147,7 +136,6 @@ struct Finished {
     top_errors: Vec<(char, u32)>,
     best_cpm: f64,
     is_record: bool,
-    shuangpin: bool,
     /// 双拼按键判定模式（错误统计的是击键，不是错字）
     sp: bool,
 }
@@ -166,9 +154,7 @@ enum Action {
     Go(Route),
     Lesson(usize),
     /// 从素材池随机截一段开始练习
-    Segment {
-        shuangpin: bool,
-    },
+    Segment,
     /// 用指定素材开始练习
     PracticeMaterial(String),
     /// 限时测试（秒）
@@ -236,11 +222,7 @@ fn decode_text(buffer: &js_sys::ArrayBuffer) -> Option<String> {
 fn draw_source_text(all: &[Material], src: &Source, seed: u64) -> String {
     match src {
         Source::Lesson(index) => LESSONS[*index].generate(seed),
-        Source::Material {
-            lang,
-            shuangpin,
-            material_id,
-        } => match material_id {
+        Source::Material { lang, material_id } => match material_id {
             Some(id) => all
                 .iter()
                 .find(|m| m.id == *id)
@@ -252,24 +234,24 @@ fn draw_source_text(all: &[Material], src: &Source, seed: u64) -> String {
                     };
                     random_segment(&m.text, m.lang, target, seed)
                 })
-                .unwrap_or_else(|| draw_segment(all, *lang, seed, *shuangpin)),
-            None => draw_segment(all, *lang, seed, *shuangpin),
+                .unwrap_or_else(|| draw_segment(all, *lang, seed)),
+            None => draw_segment(all, *lang, seed),
         },
-        Source::Test { lang, .. } => draw_segment(all, *lang, seed, false),
+        Source::Test { lang, .. } => draw_segment(all, *lang, seed),
         Source::Shuangpin { material_id, .. } => match material_id {
             Some(id) => all
                 .iter()
                 .find(|m| m.id == *id)
                 .map(|m| random_segment(&m.text, Lang::Zh, SEGMENT_ZH, seed))
-                .unwrap_or_else(|| draw_segment(all, Lang::Zh, seed, false)),
-            None => draw_segment(all, Lang::Zh, seed, false),
+                .unwrap_or_else(|| draw_segment(all, Lang::Zh, seed)),
+            None => draw_segment(all, Lang::Zh, seed),
         },
     }
 }
 
 /// 从素材池里挑一段。素材池为空时退回到同语言的第一课。
-fn draw_segment(all: &[Material], lang: Lang, seed: u64, shuangpin: bool) -> String {
-    let target = if shuangpin || lang == Lang::Zh {
+fn draw_segment(all: &[Material], lang: Lang, seed: u64) -> String {
+    let target = if lang == Lang::Zh {
         SEGMENT_ZH
     } else {
         SEGMENT_EN
@@ -304,11 +286,11 @@ pub fn App() -> impl IntoView {
     let session = RwSignal::new(Session::new("", Lang::En, ErrorMode::StopOnError));
     let source = RwSignal::new(Source::Material {
         lang: Lang::En,
-        shuangpin: false,
         material_id: None,
     });
     let test_limit = RwSignal::new(None::<u32>);
-    let shuangpin_mode = RwSignal::new(false);
+    // 中文输入法练习页是否展开小鹤双拼键位表（UI 状态，可随时切换）
+    let keymap = RwSignal::new(false);
     let records = RwSignal::new(Vec::<Record>::new());
     let user_materials = RwSignal::new(Vec::<Material>::new());
     let storage_error = RwSignal::new(None::<String>);
@@ -464,7 +446,6 @@ pub fn App() -> impl IntoView {
         }
         source.set(Source::Lesson(index));
         test_limit.set(None);
-        shuangpin_mode.set(false);
         route.set(Route::Practice);
         cursor.set(0);
         if lesson.lang == Lang::Zh {
@@ -476,13 +457,6 @@ pub fn App() -> impl IntoView {
     let begin = move |text: String, src: Source, limit: Option<u32>| {
         upcoming.set(None);
         let lang = src.lang();
-        let shuangpin = matches!(
-            src,
-            Source::Material {
-                shuangpin: true,
-                ..
-            }
-        );
         // 素材练习与限时测试面向速度：打错照常前进、可退格修正；
         // 指法课则要求打对当前字符（见 start_lesson）
         let error_mode = if matches!(src, Source::Lesson(_)) {
@@ -494,7 +468,6 @@ pub fn App() -> impl IntoView {
         ime_notice.set(false);
         source.set(src);
         test_limit.set(limit);
-        shuangpin_mode.set(shuangpin);
         route.set(Route::Practice);
         cursor.set(0);
         if lang == Lang::Zh {
@@ -503,18 +476,16 @@ pub fn App() -> impl IntoView {
         }
     };
 
-    let start_segment = move |lang: Lang, shuangpin: bool, secs: Option<u32>| {
+    let start_segment = move |lang: Lang, secs: Option<u32>| {
         seed.update(|s| *s = next_seed(*s));
         if lang == Lang::Zh {
             zh_mode.set(ZhMode::Ime);
         }
-        let text =
-            all_materials.with(|all| draw_segment(all, lang, seed.get_untracked(), shuangpin));
+        let text = all_materials.with(|all| draw_segment(all, lang, seed.get_untracked()));
         let src = match secs {
             Some(secs) => Source::Test { lang, secs },
             None => Source::Material {
                 lang,
-                shuangpin,
                 material_id: None,
             },
         };
@@ -536,12 +507,11 @@ pub fn App() -> impl IntoView {
                     random_segment(&material.text, material.lang, target, seed.get_untracked());
                 let src = Source::Material {
                     lang: material.lang,
-                    shuangpin: false,
                     material_id: Some(material.id.clone()),
                 };
                 begin(text, src, None);
             }
-            None => start_segment(tab.get_untracked(), false, None),
+            None => start_segment(tab.get_untracked(), None),
         }
     };
 
@@ -554,7 +524,6 @@ pub fn App() -> impl IntoView {
         ime_notice.set(false);
         source.set(Source::Shuangpin { secs, material_id });
         test_limit.set(secs);
-        shuangpin_mode.set(false);
         route.set(Route::Practice);
         cursor.set(0);
     };
@@ -565,8 +534,8 @@ pub fn App() -> impl IntoView {
                 .iter()
                 .find(|m| m.id == *id)
                 .map(|m| random_segment(&m.text, Lang::Zh, SEGMENT_ZH, seed.get_untracked()))
-                .unwrap_or_else(|| draw_segment(all, Lang::Zh, seed.get_untracked(), false)),
-            None => draw_segment(all, Lang::Zh, seed.get_untracked(), false),
+                .unwrap_or_else(|| draw_segment(all, Lang::Zh, seed.get_untracked())),
+            None => draw_segment(all, Lang::Zh, seed.get_untracked()),
         });
         begin_shuangpin(text, secs, material_id);
     };
@@ -630,7 +599,6 @@ pub fn App() -> impl IntoView {
             top_errors,
             best_cpm: previous_best.max(stats.cpm),
             is_record: stats.cpm > previous_best,
-            shuangpin: shuangpin_mode.get_untracked(),
             sp: is_sp(),
         }
     };
@@ -670,7 +638,7 @@ pub fn App() -> impl IntoView {
         }
         seed.update(|s| *s = next_seed(*s));
         let lang = session_lang();
-        let text = all_materials.with(|all| draw_segment(all, lang, seed.get_untracked(), false));
+        let text = all_materials.with(|all| draw_segment(all, lang, seed.get_untracked()));
         session.update(|s| s.extend_target(&text));
     };
 
@@ -820,9 +788,9 @@ pub fn App() -> impl IntoView {
             reset_heat();
             start_lesson(index);
         }
-        Action::Segment { shuangpin } => {
+        Action::Segment => {
             reset_heat();
-            start_segment(tab.get_untracked(), shuangpin, None);
+            start_segment(tab.get_untracked(), None);
         }
         // 素材页选素材：中文素材按最近一次的中文模式分流到输入法 / 双拼键位
         Action::PracticeMaterial(id) => {
@@ -838,7 +806,7 @@ pub fn App() -> impl IntoView {
         }
         Action::Test(secs) => {
             reset_heat();
-            start_segment(tab.get_untracked(), false, Some(secs));
+            start_segment(tab.get_untracked(), Some(secs));
         }
         Action::Shuangpin { secs } => {
             reset_heat();
@@ -910,14 +878,9 @@ pub fn App() -> impl IntoView {
                     .collect();
                 if lang == Lang::Zh {
                     items.push(item(
-                        "拼音练习",
-                        "用系统输入法打素材片段，打完即结算",
-                        Action::Segment { shuangpin: false },
-                    ));
-                    items.push(item(
-                        "双拼练习（跟自己的输入法）",
-                        "输入法切到小鹤方案，配键位表练习",
-                        Action::Segment { shuangpin: true },
+                        "拼音 / 双拼练习",
+                        "用系统输入法打素材片段，练习中可切换小鹤键位表",
+                        Action::Segment,
                     ));
                     items.push(item(
                         "双拼键位（按键判定）",
@@ -927,8 +890,8 @@ pub fn App() -> impl IntoView {
                 } else {
                     items.push(item(
                         "练习",
-                        "从英文素材里随机截一段，打完即结算",
-                        Action::Segment { shuangpin: false },
+                        "从英文素材里随机截一段，打完自动换下一段",
+                        Action::Segment,
                     ));
                 }
                 items.push(item(
@@ -1337,6 +1300,22 @@ pub fn App() -> impl IntoView {
                     if route.get() == Route::Practice {
                         // 练习页操作放到抬眼右侧，底部留给文本和键盘
                         view! {
+                            {move || {
+                                uses_input_field()
+                                    .then(|| {
+                                        view! {
+                                            <button
+                                                class=move || {
+                                                    if keymap.get() { "btn small" } else { "btn ghost small" }
+                                                }
+                                                title="显示 / 隐藏小鹤双拼键位表"
+                                                on:click=move |_| keymap.update(|open| *open = !*open)
+                                            >
+                                                "键位表"
+                                            </button>
+                                        }
+                                    })
+                            }}
                             <button
                                 class="btn ghost small"
                                 on:click=move |_| activate(Action::Restart)
@@ -1705,7 +1684,7 @@ pub fn App() -> impl IntoView {
                                             on:compositionend=on_cn_commit
                                         />
                                         {move || {
-                                            if shuangpin_mode.get() {
+                                            if keymap.get() {
                                                 view! { <div class="sp-ref">{shuangpin_ref()}</div> }
                                                     .into_any()
                                             } else {
@@ -1797,8 +1776,6 @@ pub fn App() -> impl IntoView {
                     let title = finished.title.clone();
                     let mode_note = if sp {
                         "双拼键位 · 按小鹤码逐键判定，多音字接受任一读音"
-                    } else if finished.shuangpin {
-                        "双拼练习 · 用输入法的小鹤方案输入"
                     } else {
                         ""
                     };
