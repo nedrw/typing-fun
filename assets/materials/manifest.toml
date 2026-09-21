@@ -45,16 +45,12 @@ name = "中文 · 双拼常用词"
 lang = "zh"
 file = "zh-shuangpin.txt"
 
-# ---- 长篇素材 ----
-# 英文 · 爱丽丝梦游仙境：Project Gutenberg #11（公版），已转纯 ASCII、去掉目录与装饰符
 [[material]]
 id = "bundled-en-alice"
 name = "英文 · 爱丽丝梦游仙境"
 lang = "en"
 file = "alice.txt"
 
-# 中文 · 骆驼祥子：老舍（中国公版；美国对 1936 年首发作品的保护期至 2032 年）。
-# 脚注与站点水印已清理；第 5 章末至第 6 章缺文据中文维基文库转录本补全（转录部分 CC BY-SA 4.0）
 [[material]]
 id = "bundled-zh-xiangzi"
 name = "中文 · 骆驼祥子"
