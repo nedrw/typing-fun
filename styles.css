@@ -649,6 +649,25 @@ button {
     overflow: hidden;
 }
 
+/* 素材页的练习模式选择 */
+.mode-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.6rem;
+    color: var(--dim);
+    font-size: 0.9rem;
+}
+
+.mode-row .tab {
+    padding: 0.25rem 0.9rem;
+}
+
+.mode-hint {
+    color: var(--dim);
+    font-size: 0.82rem;
+}
+
 .tab {
     background: transparent;
     border: 0;

@@ -953,6 +953,18 @@ pub fn App() -> impl IntoView {
                     activate(Action::DeleteMaterial(id));
                 }
             }
+            // 素材页：M 切换中文练习模式（输入法 / 双拼键位）
+            "m" | "M" => {
+                if route.get_untracked() == Route::Material && tab.get_untracked() == Lang::Zh {
+                    ev.prevent_default();
+                    zh_mode.update(|mode| {
+                        *mode = match mode {
+                            ZhMode::Ime => ZhMode::Shuangpin,
+                            ZhMode::Shuangpin => ZhMode::Ime,
+                        };
+                    });
+                }
+            }
             "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" => {
                 let index = key.parse::<usize>().unwrap_or(1) - 1;
                 if let Some(entry) = list.get(index) {
@@ -1185,16 +1197,27 @@ pub fn App() -> impl IntoView {
                                         {move || {
                                             (tab.get() == Lang::Zh)
                                                 .then(|| {
-                                                    let mode = match zh_mode.get() {
-                                                        ZhMode::Ime => "输入法判定",
-                                                        ZhMode::Shuangpin => "双拼键位判定",
-                                                    };
                                                     view! {
-                                                        <p class="lede">
-                                                            {format!(
-                                                                "当前中文模式：{mode}；选中文素材就按这个模式开练。",
-                                                            )}
-                                                        </p>
+                                                        <div class="mode-row">
+                                                            <span class="k">"练习模式"</span>
+                                                            <div class="tabs">
+                                                                <button
+                                                                    class=move || if zh_mode.get() == ZhMode::Ime { "tab on" } else { "tab" }
+                                                                    on:click=move |_| zh_mode.set(ZhMode::Ime)
+                                                                >
+                                                                    "输入法判定"
+                                                                </button>
+                                                                <button
+                                                                    class=move || if zh_mode.get() == ZhMode::Shuangpin { "tab on" } else { "tab" }
+                                                                    on:click=move |_| zh_mode.set(ZhMode::Shuangpin)
+                                                                >
+                                                                    "双拼键位"
+                                                                </button>
+                                                            </div>
+                                                            <span class="mode-hint">
+                                                                "按 M 切换 · 点素材按当前模式开练"
+                                                            </span>
+                                                        </div>
                                                     }
                                                 })
                                         }}
