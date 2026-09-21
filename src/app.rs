@@ -181,6 +181,8 @@ enum Action {
     DeleteMaterial(String),
     SaveMaterial,
     Restart,
+    /// 换一段素材（按当前来源重新抽）
+    Refresh,
     Back,
 }
 
@@ -312,6 +314,8 @@ pub fn App() -> impl IntoView {
     let ime_notice = RwSignal::new(false);
     // 每次开始练习换一个种子，避免每次都是同一段
     let seed = RwSignal::new(0x9E37_79B9_7F4A_7C15u64);
+    // 当前练习的完整文本：「重打本段」复用，不重新抽词
+    let practice_text = RwSignal::new(String::new());
     let now = RwSignal::new(js_sys::Date::now());
     // 火力条：打字蓄力、随时间衰减；爆发强度用最近 2.5 秒的即时速度
     let heat = RwSignal::new(0.0f64);
@@ -396,6 +400,7 @@ pub fn App() -> impl IntoView {
         seed.update(|s| *s = next_seed(*s));
         let lesson = &LESSONS[index];
         let text = lesson.generate(seed.get_untracked());
+        practice_text.set(text.clone());
         // 指法课要求打对当前字符才能前进
         session.set(Session::new(&text, lesson.lang, ErrorMode::StopOnError));
         ime_notice.set(false);
@@ -414,6 +419,7 @@ pub fn App() -> impl IntoView {
     };
 
     let begin = move |text: String, src: Source, limit: Option<u32>| {
+        practice_text.set(text.clone());
         let lang = src.lang();
         let shuangpin = matches!(
             src,
@@ -485,6 +491,18 @@ pub fn App() -> impl IntoView {
     };
 
     // 双拼按键判定：默认从中文素材池随机截一段；指定素材时用该素材
+    let begin_shuangpin = move |text: String, secs: Option<u32>, material_id: Option<String>| {
+        practice_text.set(text.clone());
+        zh_mode.set(ZhMode::Shuangpin);
+        // 面向速度：打错自动补上期望键继续，错误计入正确率
+        session.set(Session::shuangpin(&text, ErrorMode::Continue));
+        ime_notice.set(false);
+        source.set(Source::Shuangpin { secs, material_id });
+        test_limit.set(secs);
+        shuangpin_mode.set(false);
+        route.set(Route::Practice);
+        cursor.set(0);
+    };
     let start_shuangpin = move |secs: Option<u32>, material_id: Option<String>| {
         seed.update(|s| *s = next_seed(*s));
         let text = all_materials.with(|all| match &material_id {
@@ -495,15 +513,31 @@ pub fn App() -> impl IntoView {
                 .unwrap_or_else(|| draw_segment(all, Lang::Zh, seed.get_untracked(), false)),
             None => draw_segment(all, Lang::Zh, seed.get_untracked(), false),
         });
-        zh_mode.set(ZhMode::Shuangpin);
-        // 面向速度：打错自动补上期望键继续，错误计入正确率
-        session.set(Session::shuangpin(&text, ErrorMode::Continue));
-        ime_notice.set(false);
-        source.set(Source::Shuangpin { secs, material_id });
-        test_limit.set(secs);
-        shuangpin_mode.set(false);
-        route.set(Route::Practice);
-        cursor.set(0);
+        begin_shuangpin(text, secs, material_id);
+    };
+
+    // 重打本段：文本不变、进度清零，火力保留
+    let restart_same = move || {
+        let text = practice_text.get_untracked();
+        match source.get_untracked() {
+            Source::Shuangpin { secs, material_id } => begin_shuangpin(text, secs, material_id),
+            src => begin(text, src, test_limit.get_untracked()),
+        }
+    };
+
+    // 换一段：按当前来源重新抽一段（素材池 / 指定素材 / 课程），火力保留
+    let refresh = move || match source.get_untracked() {
+        Source::Lesson(index) => start_lesson(index),
+        Source::Material {
+            lang,
+            shuangpin,
+            material_id,
+        } => match material_id {
+            Some(id) => start_material(id),
+            None => start_segment(lang, shuangpin, None),
+        },
+        Source::Test { lang, secs } => start_segment(lang, false, Some(secs)),
+        Source::Shuangpin { secs, material_id } => start_shuangpin(secs, material_id),
     };
 
     // ---------- 结束与续段 ----------
@@ -759,19 +793,8 @@ pub fn App() -> impl IntoView {
             route.set(Route::Material);
             cursor.set(0);
         }
-        Action::Restart => match source.get_untracked() {
-            Source::Lesson(index) => start_lesson(index),
-            Source::Material {
-                lang,
-                shuangpin,
-                material_id,
-            } => match material_id {
-                Some(id) => start_material(id),
-                None => start_segment(lang, shuangpin, None),
-            },
-            Source::Test { lang, secs } => start_segment(lang, false, Some(secs)),
-            Source::Shuangpin { secs, material_id } => start_shuangpin(secs, material_id),
-        },
+        Action::Restart => restart_same(),
+        Action::Refresh => refresh(),
         Action::Back => back(),
     };
 
@@ -904,7 +927,8 @@ pub fn App() -> impl IntoView {
                 items
             }
             Route::Result(_) => vec![
-                item("再来一次", "换一段继续", Action::Restart),
+                item("换一段", "按当前来源再抽一段，火力接上", Action::Refresh),
+                item("重打本段", "同样的文本再来一遍", Action::Restart),
                 item("返回课程表", "回到菜单", Action::Back),
             ],
             Route::History => vec![],
@@ -937,6 +961,14 @@ pub fn App() -> impl IntoView {
                         return;
                     }
                     back()
+                }
+                // Tab 换一段素材（组词中让给输入法，也不让焦点跑掉）
+                "Tab" => {
+                    ev.prevent_default();
+                    if ev.is_composing() {
+                        return;
+                    }
+                    refresh();
                 }
                 "Backspace" => {
                     if !uses_input_field() {
@@ -1485,15 +1517,27 @@ pub fn App() -> impl IntoView {
                                 }
                             }}
 
-                            <div
-                                node_ref=text_ref
-                                class=move || match (is_zh(), is_sp()) {
-                                    (_, true) => "text zh sp",
-                                    (true, false) => "text zh",
-                                    _ => "text",
-                                }
-                            >
-                                {move || if is_sp() { sp_cells() } else { text_spans().into_any() }}
+                            <div class="text-box">
+                                <div
+                                    node_ref=text_ref
+                                    class=move || match (is_zh(), is_sp()) {
+                                        (_, true) => "text zh sp",
+                                        (true, false) => "text zh",
+                                        _ => "text",
+                                    }
+                                >
+                                    {move || if is_sp() { sp_cells() } else { text_spans().into_any() }}
+                                </div>
+                                <button
+                                    class="text-refresh"
+                                    title="换一段素材（Tab）"
+                                    on:click=move |ev| {
+                                        ev.stop_propagation();
+                                        refresh();
+                                    }
+                                >
+                                    "⟳ 换一段"
+                                </button>
                             </div>
 
                             <div class="hint">{hint}</div>
@@ -1529,7 +1573,7 @@ pub fn App() -> impl IntoView {
                                             } else {
                                                 view! {
                                                     <p class="cn-tip">
-                                                        "用系统输入法输入上面的文字；打错的字会标红，改对即可"
+                                                        "用系统输入法输入上面的文字；打错的字会标红，改对即可；Tab 换一段"
                                                     </p>
                                                 }
                                                     .into_any()
@@ -1564,6 +1608,7 @@ pub fn App() -> impl IntoView {
                                                     }
                                                 })
                                                 .collect_view()}
+                                            <span class="legend-item">"Tab 换一段"</span>
                                             <span class="legend-item">"Esc 退出练习"</span>
                                         </div>
                                     </div>

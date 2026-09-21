@@ -277,7 +277,8 @@ button {
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 0.6rem;
-    padding: 1rem 1.2rem;
+    /* 右上角给「换一段」按钮留位置 */
+    padding: 1rem 5.8rem 1rem 1.2rem;
     min-height: 7rem;
     /* 限时测试会不断续段，限定高度并自动跟随游标（见 app.rs 的 Effect） */
     max-height: 14rem;
@@ -286,6 +287,32 @@ button {
     white-space: pre-wrap;
     word-break: break-word;
     user-select: none;
+}
+
+.text-box {
+    position: relative;
+}
+
+.text-refresh {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.7rem;
+    z-index: 1;
+    padding: 0.22rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--dim);
+    font-size: 0.78rem;
+    cursor: pointer;
+    opacity: 0.75;
+    transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.text-refresh:hover {
+    opacity: 1;
+    color: var(--accent);
+    border-color: var(--accent);
 }
 
 .ch {
