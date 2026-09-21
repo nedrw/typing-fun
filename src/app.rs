@@ -381,6 +381,16 @@ pub fn App() -> impl IntoView {
         let _ = input.focus();
     });
 
+    // on_load 只在节点首次挂载时触发；纯键盘导航进入练习不会有点击事件，
+    // 靠这个 Effect 在路由切到练习页后把焦点放进输入框（每次进入都生效）
+    Effect::new(move |_| {
+        if route.get() == Route::Practice && uses_input_field() {
+            if let Some(input) = input_ref.get() {
+                let _ = input.focus();
+            }
+        }
+    });
+
     // ---------- 开始练习 ----------
     let start_lesson = move |index: usize| {
         seed.update(|s| *s = next_seed(*s));
