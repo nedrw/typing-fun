@@ -9,8 +9,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::rng::Rng;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum Lang {
+    #[default]
     En,
     Zh,
 }

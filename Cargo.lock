@@ -3190,6 +3190,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ron"
+version = "0.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81116b9531d61eabc41aeb228e4b6b2435bcca3233b98cf3b3077d4e6e9debb3"
+dependencies = [
+ "bitflags 2.13.2",
+ "once_cell",
+ "serde",
+ "serde_derive",
+ "typeid",
+ "unicode-ident",
+]
+
+[[package]]
 name = "rstml"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4481,10 +4495,12 @@ dependencies = [
  "console_error_panic_hook",
  "js-sys",
  "leptos",
+ "ron",
  "serde",
  "serde_json",
  "toml 0.8.2",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "web-sys",
 ]
 

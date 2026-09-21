@@ -13,8 +13,10 @@ mod progress;
 mod rng;
 mod segment;
 mod session;
+mod settings;
 mod shuangpin;
 mod storage;
+mod store;
 
 use app::*;
 use leptos::prelude::*;

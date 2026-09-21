@@ -11,6 +11,10 @@ use crate::model::{same_char, CharState, Stats};
 pub struct CnEngine {
     target: Vec<char>,
     typed: Vec<char>,
+    /// 每个目标位置是否已经计过错（首次打错计一次，改对了也不收回）
+    wrong_counted: Vec<bool>,
+    /// 错字 -> 次数，供结算时的错误分布
+    error_keys: BTreeMap<char, u32>,
     started_at: Option<f64>,
     finished_at: Option<f64>,
 }
@@ -21,6 +25,8 @@ impl CnEngine {
             // 中文练习文本不含空格（输入法里空格是选字键，打不出空格）
             target: text.chars().filter(|c| !c.is_whitespace()).collect(),
             typed: Vec::new(),
+            wrong_counted: Vec::new(),
+            error_keys: BTreeMap::new(),
             started_at: None,
             finished_at: None,
         }
@@ -36,8 +42,26 @@ impl CnEngine {
             self.started_at = Some(now_ms);
         }
         self.typed = typed;
+        self.count_new_errors();
         if self.typed.len() >= self.target.len() {
             self.finished_at = Some(now_ms);
+        }
+    }
+
+    /// 每个位置首次打错时计一次；之后改对/改错都不再影响错误分布。
+    fn count_new_errors(&mut self) {
+        let limit = self.typed.len().min(self.target.len());
+        if self.wrong_counted.len() < limit {
+            self.wrong_counted.resize(limit, false);
+        }
+        for i in 0..limit {
+            if self.wrong_counted[i] {
+                continue;
+            }
+            if !same_char(self.typed[i], self.target[i]) {
+                self.wrong_counted[i] = true;
+                *self.error_keys.entry(self.target[i]).or_insert(0) += 1;
+            }
         }
     }
 
@@ -88,15 +112,9 @@ impl CnEngine {
         self.finished_at.is_some()
     }
 
-    /// 打错的字，按出现次数倒序。
+    /// 打错的字，按累计次数倒序（首次打错计一次，改对了也保留）。
     pub fn top_error_keys(&self, n: usize) -> Vec<(char, u32)> {
-        let mut counts: BTreeMap<char, u32> = BTreeMap::new();
-        for (i, &target) in self.target.iter().enumerate().take(self.cursor()) {
-            if !same_char(self.typed[i], target) {
-                *counts.entry(target).or_insert(0) += 1;
-            }
-        }
-        let mut v: Vec<(char, u32)> = counts.into_iter().collect();
+        let mut v: Vec<(char, u32)> = self.error_keys.iter().map(|(&c, &n)| (c, n)).collect();
         v.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
         v.truncate(n);
         v
@@ -173,9 +191,19 @@ mod tests {
         assert_eq!(s.errors, 1);
         assert!((s.accuracy - 50.0).abs() < 1e-9);
         assert_eq!(e.top_error_keys(1), vec![('字', 1)]);
-        // 改对后错误消失，因为中文模式只统计当前提交的内容
+        // 改对后当前错误消失，但错误分布是累计的（首次打错计一次）
         sync_all(&mut e, "打字", 1_000.0);
         assert_eq!(e.stats(1_000.0).errors, 0);
+        assert_eq!(e.top_error_keys(1), vec![('字', 1)]);
+    }
+
+    #[test]
+    fn repeated_mistakes_on_one_position_count_once() {
+        let mut e = CnEngine::new("打字");
+        sync_all(&mut e, "打子", 0.0);
+        sync_all(&mut e, "打字", 1_000.0);
+        sync_all(&mut e, "打我", 2_000.0);
+        assert_eq!(e.top_error_keys(3), vec![('字', 1)], "同一位置只计一次");
     }
 
     #[test]

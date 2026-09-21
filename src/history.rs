@@ -1,14 +1,41 @@
-//! 成绩档案：每课的练习次数、最佳/最近成绩与速度趋势。
+//! 成绩档案：每项的练习次数、最佳/最近成绩、速度趋势与常错键。
+//!
+//! 只读视图：成绩按环形容量自动保留最近若干条，这里不提供单条删除。
+
+use std::collections::BTreeMap;
 
 use leptos::prelude::*;
 
 use crate::lessons::LESSONS;
 use crate::progress::spark_points;
-use crate::storage::{self, Record};
+use crate::storage::Record;
+
+/// 汇总一组记录里出现次数最多的错误键（英文问题键 / 中文错字）。
+fn top_errors(records: &[Record], n: usize) -> Vec<(char, u32)> {
+    let mut counts: BTreeMap<char, u32> = BTreeMap::new();
+    for record in records {
+        for &(ch, times) in &record.errors_by_key {
+            *counts.entry(ch).or_insert(0) += times;
+        }
+    }
+    let mut top: Vec<(char, u32)> = counts.into_iter().collect();
+    top.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+    top.truncate(n);
+    top
+}
+
+fn error_text(errors: &[(char, u32)]) -> String {
+    errors
+        .iter()
+        .map(|(ch, times)| format!("{ch} ×{times}"))
+        .collect::<Vec<_>>()
+        .join("   ")
+}
 
 pub fn history_view(
     records: RwSignal<Vec<Record>>,
     on_back: impl Fn() + Copy + Send + Sync + 'static,
+    on_clear: impl Fn() + Copy + Send + Sync + 'static,
 ) -> impl IntoView {
     let confirming = RwSignal::new(false);
 
@@ -27,6 +54,8 @@ pub fn history_view(
             fmt_duration(secs)
         )
     };
+
+    let problems = move || top_errors(&records.get(), 10);
 
     let rows = move || {
         let all = records.get();
@@ -58,18 +87,23 @@ pub fn history_view(
                 let accuracy =
                     history.iter().map(|r| r.accuracy).sum::<f64>() / history.len() as f64;
                 let values: Vec<f64> = history.iter().rev().take(12).rev().map(|r| r.cpm).collect();
+                let row_errors = top_errors(&history, 3);
+                let meta = if row_errors.is_empty() {
+                    format!("练习 {} 次 · 平均正确率 {:.0}%", history.len(), accuracy)
+                } else {
+                    format!(
+                        "练习 {} 次 · 平均正确率 {:.0}% · 常错 {}",
+                        history.len(),
+                        accuracy,
+                        error_text(&row_errors)
+                    )
+                };
 
                 view! {
                     <div class="history-row">
                         <div class="history-main">
                             <span class="history-title">{title}</span>
-                            <span class="history-meta">
-                                {format!(
-                                    "练习 {} 次 · 平均正确率 {:.0}%",
-                                    history.len(),
-                                    accuracy,
-                                )}
-                            </span>
+                            <span class="history-meta">{meta}</span>
                         </div>
                         <div class="history-score">
                             <span class="history-recent">{format!("最近 {recent:.0}")}</span>
@@ -111,8 +145,7 @@ pub fn history_view(
                             <button
                                 class="btn danger"
                                 on:click=move |_| {
-                                    storage::clear();
-                                    records.set(Vec::new());
+                                    on_clear();
                                     confirming.set(false);
                                 }
                             >
@@ -135,6 +168,22 @@ pub fn history_view(
             </div>
 
             <p class="lede">{summary}</p>
+
+            {move || {
+                let tops = problems();
+                if tops.is_empty() {
+                    ().into_any()
+                } else {
+                    view! {
+                        <div class="problem">
+                            <span class="k">"常错键"</span>
+                            <b>{error_text(&tops)}</b>
+                            <span class="k">"按首次打错累计，改对不收回"</span>
+                        </div>
+                    }
+                        .into_any()
+                }
+            }}
 
             {move || {
                 if records.get().is_empty() {

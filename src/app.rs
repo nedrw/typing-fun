@@ -17,12 +17,19 @@ use crate::model::{CharState, Stats};
 use crate::rng::{next_seed, Rng};
 use crate::segment::{detect_lang, random_segment};
 use crate::session::Session;
+use crate::settings::Settings;
 use crate::shuangpin;
 use crate::storage::{self, Record};
+use crate::store;
 
 /// 素材片段的目标长度（字符数）。
 const SEGMENT_EN: usize = 200;
 const SEGMENT_ZH: usize = 60;
+
+/// 数据文件名（相对 app data dir）。
+const RECORDS_FILE: &str = storage::FILE;
+const MATERIALS_FILE: &str = materials::FILE;
+const SETTINGS_FILE: &str = crate::settings::FILE;
 
 /// 一次练习的来源：决定成绩归档到哪一项，以及结束后「再来一次」重复什么。
 #[derive(Clone, PartialEq)]
@@ -220,14 +227,48 @@ pub fn App() -> impl IntoView {
     });
     let test_limit = RwSignal::new(None::<u32>);
     let shuangpin_mode = RwSignal::new(false);
-    let records = RwSignal::new(storage::load());
-    let user_materials = RwSignal::new(materials::load());
+    let records = RwSignal::new(Vec::<Record>::new());
+    let user_materials = RwSignal::new(Vec::<Material>::new());
+    let storage_error = RwSignal::new(None::<String>);
     // 随包素材（编译期内嵌）+ 用户素材合成一份，只在用户素材变化时重算，渲染时不重建池子
     let all_materials = Memo::new(move |_| {
         let mut all = materials::bundled();
         all.extend(user_materials.get());
         all
     });
+
+    // ---------- 用户数据落盘 ----------
+    // 桌面端写 app data dir（RON），浏览器里退回 localStorage；失败在顶部横幅提示
+    let on_storage_error = move |message: String| storage_error.set(Some(message));
+
+    store::load::<Vec<Record>>(RECORDS_FILE, move |loaded| {
+        if let Some(loaded) = loaded {
+            records.set(storage::trim(loaded));
+        }
+    });
+    store::load::<Vec<Material>>(MATERIALS_FILE, move |loaded| {
+        if let Some(loaded) = loaded {
+            user_materials.set(loaded);
+        }
+    });
+    store::load::<Settings>(SETTINGS_FILE, move |loaded| {
+        if let Some(loaded) = loaded {
+            tab.set(loaded.lang);
+        }
+    });
+
+    let persist_records = move |next: Vec<Record>| {
+        records.set(next.clone());
+        store::save(RECORDS_FILE, &next, on_storage_error);
+    };
+    let persist_materials = move |next: Vec<Material>| {
+        user_materials.set(next.clone());
+        store::save(MATERIALS_FILE, &next, on_storage_error);
+    };
+    let persist_tab = move |lang: Lang| {
+        tab.set(lang);
+        store::save(SETTINGS_FILE, &Settings { lang }, on_storage_error);
+    };
     let name_input = RwSignal::new(String::new());
     let text_input = RwSignal::new(String::new());
     // 英文练习里检测到输入法组词时给出的提示
@@ -355,20 +396,25 @@ pub fn App() -> impl IntoView {
     let finish = move || {
         let now_ms = js_sys::Date::now();
         let (id, title, lang) = source.with_untracked(|s| s.meta());
-        let (stats, top_errors) = session.with(|s| (s.stats(now_ms), s.top_error_keys(3)));
+        let (stats, top_errors, record_errors) =
+            session.with(|s| (s.stats(now_ms), s.top_error_keys(3), s.top_error_keys(10)));
         let previous_best = storage::best(&records.get_untracked(), &id)
             .map(|r| r.cpm)
             .unwrap_or(0.0);
-        records.set(storage::push(Record {
-            lesson_id: id,
-            title: title.clone(),
-            at_ms: now_ms,
-            cpm: stats.cpm,
-            accuracy: stats.accuracy,
-            errors: stats.errors,
-            chars: stats.correct,
-            secs: stats.secs,
-        }));
+        persist_records(storage::push(
+            &records.get_untracked(),
+            Record {
+                lesson_id: id,
+                title: title.clone(),
+                at_ms: now_ms,
+                cpm: stats.cpm,
+                accuracy: stats.accuracy,
+                errors: stats.errors,
+                chars: stats.correct,
+                secs: stats.secs,
+                errors_by_key: record_errors,
+            },
+        ));
         route.set(Route::Result(Finished {
             title,
             lang,
@@ -469,15 +515,18 @@ pub fn App() -> impl IntoView {
                 }
                 // 按内容归类，而不是按当前 tab：否则会出现「中文课里挂英文素材」这种打不出来的组合
                 let lang = detect_lang(&text);
-                user_materials.set(materials::upsert(Material {
-                    id: user_material_id(),
-                    name: name.clone(),
-                    lang,
-                    text,
-                    bundled: false,
-                }));
+                persist_materials(materials::upsert(
+                    &user_materials.get_untracked(),
+                    Material {
+                        id: user_material_id(),
+                        name: name.clone(),
+                        lang,
+                        text,
+                        bundled: false,
+                    },
+                ));
                 // 切到对应语言，让导入结果立刻可见
-                tab.set(lang);
+                persist_tab(lang);
             });
             reader.set_onloadend(Some(on_done.as_ref().unchecked_ref()));
             // 一次性回调：导入是低频操作，读完就丢给浏览器回收
@@ -513,7 +562,9 @@ pub fn App() -> impl IntoView {
                 input.click();
             }
         }
-        Action::DeleteMaterial(id) => user_materials.set(materials::remove(&id)),
+        Action::DeleteMaterial(id) => {
+            persist_materials(materials::remove(&user_materials.get_untracked(), &id))
+        }
         Action::SaveMaterial => {
             let name = name_input.get_untracked().trim().to_string();
             let text = text_input.get_untracked();
@@ -529,14 +580,17 @@ pub fn App() -> impl IntoView {
                 } else {
                     name
                 };
-                user_materials.set(materials::upsert(Material {
-                    id: user_material_id(),
-                    name,
-                    lang,
-                    text,
-                    bundled: false,
-                }));
-                tab.set(lang);
+                persist_materials(materials::upsert(
+                    &user_materials.get_untracked(),
+                    Material {
+                        id: user_material_id(),
+                        name,
+                        lang,
+                        text,
+                        bundled: false,
+                    },
+                ));
+                persist_tab(lang);
                 name_input.set(String::new());
                 text_input.set(String::new());
             }
@@ -766,7 +820,7 @@ pub fn App() -> impl IntoView {
                 } else {
                     Lang::En
                 };
-                tab.set(next);
+                persist_tab(next);
                 route.set(Route::Home);
                 cursor.set(0);
             }
@@ -913,7 +967,7 @@ pub fn App() -> impl IntoView {
                                                     if tab.get() == l { "tab on" } else { "tab" }
                                                 }
                                                 on:click=move |_| {
-                                                    tab.set(l);
+                                                    persist_tab(l);
                                                     route.set(Route::Home);
                                                     cursor.set(0);
                                                 }
@@ -942,6 +996,21 @@ pub fn App() -> impl IntoView {
                 }}
             </div>
         </header>
+
+        {move || {
+            storage_error
+                .get()
+                .map(|message| {
+                    view! {
+                        <div class="warn storage-warn">
+                            <span>{message}</span>
+                            <button class="btn ghost" on:click=move |_| storage_error.set(None)>
+                                "知道了"
+                            </button>
+                        </div>
+                    }
+                })
+        }}
 
         <main class="screen">
             {move || match route.get() {
@@ -1025,7 +1094,7 @@ pub fn App() -> impl IntoView {
                 }
 
                 Route::History => {
-                    history_view(records, back).into_any()
+                    history_view(records, back, move || persist_records(Vec::new())).into_any()
                 }
 
                 Route::Practice => {
