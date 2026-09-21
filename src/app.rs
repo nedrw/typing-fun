@@ -232,7 +232,7 @@ fn draw_segment(all: &[Material], lang: Lang, seed: u64, shuangpin: bool) -> Str
     let pool: Vec<&Material> = all.iter().filter(|m| m.lang == lang).collect();
     let mut rng = Rng::new(seed);
     match rng.pick(&pool) {
-        Some(material) => random_segment(&material.text, target, seed),
+        Some(material) => random_segment(&material.text, lang, target, seed),
         None => LESSONS
             .iter()
             .find(|l| l.lang == lang)
@@ -426,7 +426,8 @@ pub fn App() -> impl IntoView {
                 } else {
                     SEGMENT_EN
                 };
-                let text = random_segment(&material.text, target, seed.get_untracked());
+                let text =
+                    random_segment(&material.text, material.lang, target, seed.get_untracked());
                 let src = Source::Material {
                     lang: material.lang,
                     shuangpin: false,
@@ -445,7 +446,7 @@ pub fn App() -> impl IntoView {
             Some(id) => all
                 .iter()
                 .find(|m| m.id == *id)
-                .map(|m| random_segment(&m.text, SEGMENT_ZH, seed.get_untracked()))
+                .map(|m| random_segment(&m.text, Lang::Zh, SEGMENT_ZH, seed.get_untracked()))
                 .unwrap_or_else(|| draw_segment(all, Lang::Zh, seed.get_untracked(), false)),
             None => draw_segment(all, Lang::Zh, seed.get_untracked(), false),
         });

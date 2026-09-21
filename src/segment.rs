@@ -23,38 +23,53 @@ pub fn detect_lang(text: &str) -> Lang {
 /// 取一段约 `target_chars` 个字符的片段。
 ///
 /// - 素材本身比 `target_chars` 短（或为 0）时整段返回
-/// - 含空格的素材按英文处理，起点与终点对齐到词边界，避免从半个单词开始
-/// - 不含空格的素材（中文）按字符切
-pub fn random_segment(text: &str, target_chars: usize, seed: u64) -> String {
+/// - 英文按词边界切：起点对齐到词首、终点补到词尾，避免从半个单词开始
+/// - 中文按字切（中文本无词边界，且段间换行不能当成英文的空格）
+pub fn random_segment(text: &str, lang: Lang, target_chars: usize, seed: u64) -> String {
+    match lang {
+        Lang::En => english_segment(text, target_chars, seed),
+        Lang::Zh => chinese_segment(text, target_chars, seed),
+    }
+}
+
+fn chinese_segment(text: &str, target_chars: usize, seed: u64) -> String {
+    // 中文练习文本不含空白（输入法里空格是选字键），这里直接按字取
+    let chars: Vec<char> = text.chars().filter(|c| !c.is_whitespace()).collect();
+    if target_chars == 0 || chars.len() <= target_chars {
+        return chars.into_iter().collect();
+    }
+    let mut rng = Rng::new(seed);
+    let start = rng.below(chars.len() - target_chars + 1);
+    chars[start..start + target_chars].iter().collect()
+}
+
+fn english_segment(text: &str, target_chars: usize, seed: u64) -> String {
     let normalized = text.split_whitespace().collect::<Vec<_>>().join(" ");
     let chars: Vec<char> = normalized.chars().collect();
     if target_chars == 0 || chars.len() <= target_chars {
         return normalized;
     }
 
-    let english = normalized.contains(' ');
     let mut rng = Rng::new(seed);
     let start = rng.below(chars.len() - target_chars + 1);
     let mut begin = start;
     let mut end = start + target_chars;
 
-    if english {
-        // 起点推到词首
-        while begin < chars.len() && begin > 0 && chars[begin - 1] != ' ' {
-            begin += 1;
-        }
-        // 终点补到词尾
-        while end < chars.len() && chars[end] != ' ' {
-            end += 1;
-        }
-        if begin >= end {
-            // 极端情况下（片段里只有一个超长词）退回到字符切分
-            begin = start;
-            end = (start + target_chars).min(chars.len());
-        }
-        if end < chars.len() && chars[end] == ' ' {
-            end += 1;
-        }
+    // 起点推到词首
+    while begin < chars.len() && begin > 0 && chars[begin - 1] != ' ' {
+        begin += 1;
+    }
+    // 终点补到词尾
+    while end < chars.len() && chars[end] != ' ' {
+        end += 1;
+    }
+    if begin >= end {
+        // 极端情况下（片段里只有一个超长词）退回到字符切分
+        begin = start;
+        end = (start + target_chars).min(chars.len());
+    }
+    if end < chars.len() && chars[end] == ' ' {
+        end += 1;
     }
 
     chars[begin..end]
@@ -74,22 +89,35 @@ mod tests {
 
     #[test]
     fn short_material_is_returned_whole() {
-        assert_eq!(random_segment("hello world", 100, 1), "hello world");
-        assert_eq!(random_segment(ZH, 1000, 1), ZH);
+        assert_eq!(
+            random_segment("hello world", Lang::En, 100, 1),
+            "hello world"
+        );
+        assert_eq!(random_segment(ZH, Lang::Zh, 1000, 1), ZH);
     }
 
     #[test]
     fn chinese_segment_has_exact_length() {
-        let segment = random_segment(ZH, 12, 5);
+        let segment = random_segment(ZH, Lang::Zh, 12, 5);
         assert_eq!(segment.chars().count(), 12);
         assert!(ZH.contains(&segment));
+    }
+
+    /// 中文小说的段落换行不能让它被当成英文按「词」切（整段 = 一个超长词）。
+    #[test]
+    fn chinese_with_paragraphs_is_cut_by_chars() {
+        let novel = "第一段比较长，需要被按字切开。\n\n第二段也不短，同样按字切。\n\n第三段更长了，继续按字切。";
+        for seed in 0..10 {
+            let segment = random_segment(novel, Lang::Zh, 10, seed);
+            assert_eq!(segment.chars().count(), 10, "seed={seed}");
+        }
     }
 
     #[test]
     fn english_segment_keeps_words_whole() {
         let words: Vec<&str> = EN.split(' ').collect();
         for seed in 0..20 {
-            let segment = random_segment(EN, 30, seed);
+            let segment = random_segment(EN, Lang::En, 30, seed);
             assert!(!segment.is_empty(), "seed={seed} 取到空片段");
             for word in segment.split(' ') {
                 assert!(words.contains(&word), "seed={seed} 出现半个单词：{word}");
@@ -99,17 +127,20 @@ mod tests {
 
     #[test]
     fn same_seed_same_segment() {
-        assert_eq!(random_segment(ZH, 15, 3), random_segment(ZH, 15, 3));
+        assert_eq!(
+            random_segment(ZH, Lang::Zh, 15, 3),
+            random_segment(ZH, Lang::Zh, 15, 3)
+        );
         assert_ne!(
-            random_segment(ZH, 15, 3),
-            random_segment(ZH, 15, 4),
+            random_segment(ZH, Lang::Zh, 15, 3),
+            random_segment(ZH, Lang::Zh, 15, 4),
             "不同种子应取到不同片段"
         );
     }
 
     #[test]
     fn messy_whitespace_is_normalized() {
-        let segment = random_segment("  hello \n\n world\tagain  ", 100, 1);
+        let segment = random_segment("  hello \n\n world\tagain  ", Lang::En, 100, 1);
         assert_eq!(segment, "hello world again");
     }
 
