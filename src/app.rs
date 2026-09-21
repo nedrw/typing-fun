@@ -48,6 +48,8 @@ enum Source {
     /// 双拼按键判定（小鹤）：secs 为 Some 时是限时测试
     Shuangpin {
         secs: Option<u32>,
+        /// 指定素材时固定用这一段，否则从素材池随机
+        material_id: Option<String>,
     },
 }
 
@@ -87,7 +89,7 @@ impl Source {
                 format!("{}限时测试 · {} 分钟", lang.name(), secs / 60),
                 *lang,
             ),
-            Source::Shuangpin { secs } => match secs {
+            Source::Shuangpin { secs, .. } => match secs {
                 Some(secs) => (
                     format!("zh-shuangpin-test-{secs}"),
                     format!("双拼键位测试 · {} 分钟", secs / 60),
@@ -108,6 +110,15 @@ fn lang_tag(lang: Lang) -> &'static str {
         Lang::En => "en",
         Lang::Zh => "zh",
     }
+}
+
+/// 最近一次中文练习的判定方式：素材页按它决定点素材后进哪个引擎。
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum ZhMode {
+    /// 输入法判定：拼音练习、跟输入法练双拼、中文课程与测试
+    Ime,
+    /// 小鹤双拼按键判定
+    Shuangpin,
 }
 
 #[derive(Clone, PartialEq)]
@@ -242,6 +253,8 @@ pub fn App() -> impl IntoView {
     let route = RwSignal::new(Route::Home);
     let cursor = RwSignal::new(0usize);
     let tab = RwSignal::new(Lang::En);
+    // 最近一次中文练习的模式：决定素材页点素材后进哪个引擎
+    let zh_mode = RwSignal::new(ZhMode::Ime);
     let session = RwSignal::new(Session::new("", Lang::En, ErrorMode::StopOnError));
     let source = RwSignal::new(Source::Material {
         lang: Lang::En,
@@ -341,6 +354,9 @@ pub fn App() -> impl IntoView {
         // 指法课要求打对当前字符才能前进
         session.set(Session::new(&text, lesson.lang, ErrorMode::StopOnError));
         ime_notice.set(false);
+        if lesson.lang == Lang::Zh {
+            zh_mode.set(ZhMode::Ime);
+        }
         source.set(Source::Lesson(index));
         test_limit.set(None);
         shuangpin_mode.set(false);
@@ -383,6 +399,9 @@ pub fn App() -> impl IntoView {
 
     let start_segment = move |lang: Lang, shuangpin: bool, secs: Option<u32>| {
         seed.update(|s| *s = next_seed(*s));
+        if lang == Lang::Zh {
+            zh_mode.set(ZhMode::Ime);
+        }
         let text =
             all_materials.with(|all| draw_segment(all, lang, seed.get_untracked(), shuangpin));
         let src = match secs {
@@ -419,15 +438,22 @@ pub fn App() -> impl IntoView {
         }
     };
 
-    // 双拼按键判定：从中文素材随机截一段，按小鹤码逐键打
-    let start_shuangpin = move |secs: Option<u32>| {
+    // 双拼按键判定：默认从中文素材池随机截一段；指定素材时用该素材
+    let start_shuangpin = move |secs: Option<u32>, material_id: Option<String>| {
         seed.update(|s| *s = next_seed(*s));
-        let text =
-            all_materials.with(|all| draw_segment(all, Lang::Zh, seed.get_untracked(), false));
+        let text = all_materials.with(|all| match &material_id {
+            Some(id) => all
+                .iter()
+                .find(|m| m.id == *id)
+                .map(|m| random_segment(&m.text, SEGMENT_ZH, seed.get_untracked()))
+                .unwrap_or_else(|| draw_segment(all, Lang::Zh, seed.get_untracked(), false)),
+            None => draw_segment(all, Lang::Zh, seed.get_untracked(), false),
+        });
+        zh_mode.set(ZhMode::Shuangpin);
         // 面向速度：打错自动补上期望键继续，错误计入正确率
         session.set(Session::shuangpin(&text, ErrorMode::Continue));
         ime_notice.set(false);
-        source.set(Source::Shuangpin { secs });
+        source.set(Source::Shuangpin { secs, material_id });
         test_limit.set(secs);
         shuangpin_mode.set(false);
         route.set(Route::Practice);
@@ -598,9 +624,19 @@ pub fn App() -> impl IntoView {
         }
         Action::Lesson(index) => start_lesson(index),
         Action::Segment { shuangpin } => start_segment(tab.get_untracked(), shuangpin, None),
-        Action::PracticeMaterial(id) => start_material(id),
+        // 素材页选素材：中文素材按最近一次的中文模式分流到输入法 / 双拼键位
+        Action::PracticeMaterial(id) => {
+            let zh_shuangpin = all_materials
+                .with_untracked(|all| all.iter().any(|m| m.id == id && m.lang == Lang::Zh))
+                && zh_mode.get_untracked() == ZhMode::Shuangpin;
+            if zh_shuangpin {
+                start_shuangpin(None, Some(id));
+            } else {
+                start_material(id);
+            }
+        }
         Action::Test(secs) => start_segment(tab.get_untracked(), false, Some(secs)),
-        Action::Shuangpin { secs } => start_shuangpin(secs),
+        Action::Shuangpin { secs } => start_shuangpin(secs, None),
         Action::Import => {
             if let Some(input) = file_ref.get() {
                 input.click();
@@ -652,7 +688,7 @@ pub fn App() -> impl IntoView {
                 None => start_segment(lang, shuangpin, None),
             },
             Source::Test { lang, secs } => start_segment(lang, false, Some(secs)),
-            Source::Shuangpin { secs } => start_shuangpin(secs),
+            Source::Shuangpin { secs, material_id } => start_shuangpin(secs, material_id),
         },
         Action::Back => back(),
     };
@@ -661,6 +697,8 @@ pub fn App() -> impl IntoView {
     let items = Memo::new(move |_| {
         let lang = tab.get();
         let records_snapshot = records.get();
+        // 中文模式为双拼键位时，素材项提示也跟着变
+        let sp_mode = lang == Lang::Zh && zh_mode.get() == ZhMode::Shuangpin;
         match route.get() {
             Route::Home => {
                 let mut items: Vec<Item> = GROUPS
@@ -762,15 +800,16 @@ pub fn App() -> impl IntoView {
                 ];
                 let materials_snapshot = all_materials.get();
                 for material in materials_snapshot.iter().filter(|m| m.lang == lang) {
+                    let mode_hint = if sp_mode { "双拼键位" } else { "练习" };
                     let mut entry = item(
                         material.name.clone(),
                         format!(
-                            "{} 字{}",
+                            "{} 字 · 回车{}",
                             material.len_chars(),
                             if material.bundled {
-                                " · 随包素材"
+                                format!("{mode_hint}（随包素材）")
                             } else {
-                                " · 回车开始练习，Delete 删除"
+                                format!("{mode_hint}，Delete 删除")
                             }
                         ),
                         Action::PracticeMaterial(material.id.clone()),
@@ -1143,6 +1182,22 @@ pub fn App() -> impl IntoView {
                                             "练习与测试都会从这里的素材里随机截取片段。导入的 txt 存"
                                             "在本地，不会上传。"
                                         </p>
+                                        {move || {
+                                            (tab.get() == Lang::Zh)
+                                                .then(|| {
+                                                    let mode = match zh_mode.get() {
+                                                        ZhMode::Ime => "输入法判定",
+                                                        ZhMode::Shuangpin => "双拼键位判定",
+                                                    };
+                                                    view! {
+                                                        <p class="lede">
+                                                            {format!(
+                                                                "当前中文模式：{mode}；选中文素材就按这个模式开练。",
+                                                            )}
+                                                        </p>
+                                                    }
+                                                })
+                                        }}
                                     }
                                         .into_any()
                                 } else if route.get() == Route::Tests {
