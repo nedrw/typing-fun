@@ -205,6 +205,15 @@ fn user_material_id() -> String {
     format!("user-{}", js_sys::Date::now() as u64)
 }
 
+/// 会话初始种子：时间 + 浏览器随机数混合。
+///
+/// 之前用固定常量，导致每次启动软件后第一次抽到的素材/片段都是同一段。
+fn initial_seed() -> u64 {
+    let high = (js_sys::Math::random() * 4_294_967_296.0) as u64;
+    let low = (js_sys::Math::random() * 4_294_967_296.0) as u64;
+    ((high << 32) | low) ^ (js_sys::Date::now() as u64)
+}
+
 /// 把文件内容解成文本：先按 UTF-8 严格解，失败再按 GB18030 试。
 ///
 /// 中文用户手头的 txt 很多是 Windows 记事本存的 GBK/GB18030，
@@ -233,7 +242,8 @@ fn draw_segment(all: &[Material], lang: Lang, seed: u64, shuangpin: bool) -> Str
     let pool: Vec<&Material> = all.iter().filter(|m| m.lang == lang).collect();
     let mut rng = Rng::new(seed);
     match rng.pick(&pool) {
-        Some(material) => random_segment(&material.text, lang, target, seed),
+        // 抽中素材与片段起点用两条不同的随机流，避免两者相关
+        Some(material) => random_segment(&material.text, lang, target, next_seed(seed)),
         None => LESSONS
             .iter()
             .find(|l| l.lang == lang)
@@ -311,7 +321,7 @@ pub fn App() -> impl IntoView {
     // 英文练习里检测到输入法组词时给出的提示
     let ime_notice = RwSignal::new(false);
     // 每次开始练习换一个种子，避免每次都是同一段
-    let seed = RwSignal::new(0x9E37_79B9_7F4A_7C15u64);
+    let seed = RwSignal::new(initial_seed());
     let now = RwSignal::new(js_sys::Date::now());
     // 火力条：打字蓄力、随时间衰减；爆发强度用最近 2.5 秒的即时速度
     let heat = RwSignal::new(0.0f64);

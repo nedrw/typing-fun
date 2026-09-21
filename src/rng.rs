@@ -17,7 +17,8 @@ impl Rng {
     }
 
     pub fn below(&mut self, n: usize) -> usize {
-        (self.next() % n as u64) as usize
+        // 取高 32 位：xorshift64 的低位随机性较弱，抽小范围时容易有规律
+        ((self.next() >> 32) as usize) % n
     }
 
     pub fn pick<'a, T>(&mut self, items: &'a [T]) -> Option<&'a T> {
@@ -55,6 +56,32 @@ mod tests {
             assert!(rng.below(7) < 7);
         }
         assert_eq!(Rng::new(1).below(1), 0);
+    }
+
+    #[test]
+    fn below_spreads_across_buckets() {
+        // 取高位的回归测试：分布不应明显偏向某个桶
+        let mut rng = Rng::new(42);
+        let mut counts = [0usize; 6];
+        for _ in 0..6_000 {
+            counts[rng.below(6)] += 1;
+        }
+        assert!(
+            counts.iter().all(|&n| (700..=1300).contains(&n)),
+            "分布太偏：{counts:?}"
+        );
+    }
+
+    #[test]
+    fn consecutive_seeds_visit_every_slot() {
+        // 同一会话里连续换段的种子不应该总落在同一个槽
+        let mut seed = 0x9E37_79B9_7F4A_7C15u64;
+        let mut slots = Vec::new();
+        for _ in 0..24 {
+            seed = next_seed(seed);
+            slots.push(Rng::new(seed).below(3));
+        }
+        assert!(slots.contains(&0) && slots.contains(&1) && slots.contains(&2));
     }
 
     #[test]
