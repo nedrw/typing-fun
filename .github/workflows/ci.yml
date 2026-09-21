@@ -94,6 +94,24 @@ jobs:
           args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
           tagName: ${{ startsWith(github.ref, 'refs/tags/v') && 'v__VERSION__' || '' }}
           releaseName: "打字训练 v__VERSION__"
+          releaseBody: |
+            各平台安装包选择指南
+
+            **macOS**（先确认芯片再下载：「系统设置 → 通用 → 关于本机」看「芯片」）
+            - `*_aarch64.dmg`：Apple 芯片（M1/M2/M3…）
+            - `*_x64.dmg`：Intel 芯片
+
+            包是 ad-hoc 签名、未公证，若提示「已损坏」或「无法验证开发者」，装到「应用程序」后执行一次：
+            ```sh
+            xattr -dr com.apple.quarantine "/Applications/打字训练.app"
+            ```
+
+            **Windows**
+            - `*_x64-setup.exe`（NSIS）或 `*_x64_en-US.msi`；缺 WebView2 时安装器会自动下载
+
+            **Linux**
+            - `*.deb` / `*.rpm`：体积小，依赖系统 WebKitGTK（已写进 Depends）
+            - `*.AppImage`：约 70MB，自带 GTK/WebKitGTK，不想装依赖时用它（需 FUSE，或加 `--appimage-extract-and-run`）
           releaseDraft: true
           prerelease: false
 

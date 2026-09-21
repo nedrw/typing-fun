@@ -74,7 +74,7 @@ cargo tauri build        # 内部先跑 trunk build --release，再编译桌面�
 
 ### 安装说明
 
-**macOS**：Release 里的 dmg 是 ad-hoc 签名、未公证，从网上下载后 Gatekeeper 会报「已损坏，无法打开」——文件没坏，是 quarantine 属性。装到「应用程序」后执行一次即可：
+**macOS**：Release 里有两个 dmg，**先确认芯片架构再下载**（「系统设置 → 通用 → 关于本机」看「芯片」）：`*_aarch64.dmg` 对应 Apple 芯片（M 系列），`*_x64.dmg` 对应 Intel；选错架构会打不开，有时被系统报成「已损坏」。另外包是 ad-hoc 签名、未公证，若提示「已损坏」或「无法验证开发者」，装到「应用程序」后执行一次即可：
 
 ```sh
 xattr -dr com.apple.quarantine "/Applications/打字训练.app"
