@@ -71,7 +71,20 @@ cargo tauri build        # 内部先跑 trunk build --release，再编译桌面�
 - 发版流程：改 `Cargo.toml` / `src-tauri/tauri.conf.json` 里的版本号 → `git tag vX.Y.Z && git push origin vX.Y.Z` → 到 Releases 页把草稿发布
 - 想单独跑安装包矩阵：Actions → CI → Run workflow（不用打 tag，产物作为 workflow artifacts 上传）
 - 数据目录按平台走 `app_data_dir`：macOS `~/Library/Application Support/com.drmin.typing-fun/data/`、Windows `%APPDATA%\com.drmin.typing-fun\data\`、Linux `~/.local/share/com.drmin.typing-fun/data/`
-- **尚未配置**（涉及账号/费用）：macOS 签名与公证、Windows 代码签名、自动更新（`tauri-plugin-updater`）；CSP 目前为 `null`（Trunk 会注入内联启动脚本，要收紧得先解决 nonce）
+
+### 安装说明
+
+**macOS**：Release 里的 dmg 是 ad-hoc 签名、未公证，从网上下载后 Gatekeeper 会报「已损坏，无法打开」——文件没坏，是 quarantine 属性。装到「应用程序」后执行一次即可：
+
+```sh
+xattr -dr com.apple.quarantine "/Applications/打字训练.app"
+```
+
+有 Apple 开发者账号（$99/年）后，在仓库 Secrets 里配 `APPLE_CERTIFICATE` / `APPLE_CERTIFICATE_PASSWORD` / `APPLE_SIGNING_IDENTITY` / `APPLE_ID` / `APPLE_PASSWORD` / `APPLE_TEAM_ID`，再取消 `.github/workflows/ci.yml` 里那段注释，之后构建会自动签名 + 公证，用户双击即可打开。
+
+**Linux**：`deb` / `rpm` 只有几 MB，因为它们依赖系统的 WebKitGTK（已写进 `Depends`）；`AppImage` 约 70MB 是因为它把 GTK/WebKitGTK 整套打进去了，适合不想装依赖的场合（需要 FUSE，或加 `--appimage-extract-and-run`）。
+
+- **尚未配置**（涉及账号/费用）：Windows 代码签名、自动更新（`tauri-plugin-updater`）；CSP 目前为 `null`（Trunk 会注入内联启动脚本，要收紧得先解决 nonce）
 
 ## 数据与素材
 
