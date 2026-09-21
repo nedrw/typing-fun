@@ -3,6 +3,7 @@ mod bundled;
 mod cn_engine;
 mod dom;
 mod engine;
+mod heat;
 mod history;
 mod keyboard;
 mod layout;

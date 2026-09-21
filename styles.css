@@ -194,6 +194,95 @@ button {
     transition: width 0.12s linear;
 }
 
+/* ---------- 火力条 ---------- */
+
+.heat-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: -0.35rem 0 0.9rem;
+}
+
+.heat-label {
+    flex: none;
+    color: var(--dim);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+}
+
+.heat {
+    position: relative;
+    flex: 1;
+    height: 0.5rem;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+}
+
+.heat > i {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: inherit;
+    background-image: linear-gradient(90deg, #3d5afe, #ffd166 55%, #ff3d00);
+    background-size: 200% 100%;
+    background-position-x: 0%;
+    filter: saturate(var(--sat, 60%)) brightness(var(--bri, 72%));
+    transition: width 0.1s linear, background-position-x 0.15s linear;
+}
+
+.heat.full {
+    box-shadow: 0 0 var(--glow, 5px) rgba(255, 130, 40, 0.55);
+    animation: heat-glow var(--dur, 0.8s) ease-in-out infinite;
+}
+
+@keyframes heat-glow {
+    50% {
+        box-shadow: 0 0 calc(var(--glow, 5px) * 1.7) rgba(255, 175, 60, 0.85);
+    }
+}
+
+.heat .spark {
+    position: absolute;
+    right: 0.35rem;
+    top: 50%;
+    width: 0.32rem;
+    height: 0.32rem;
+    margin: -0.16rem;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(circle, #fff 0%, #ffb347 55%, rgba(255, 120, 40, 0) 72%);
+    animation: heat-spark var(--dur, 0.8s) ease-out infinite;
+}
+
+.heat .spark.s0 { --dx: 1.5rem; --dy: -1.2rem; animation-delay: 0s; }
+.heat .spark.s1 { --dx: 2.1rem; --dy: -0.4rem; animation-delay: 0.08s; }
+.heat .spark.s2 { --dx: 1.7rem; --dy: 0.7rem; animation-delay: 0.16s; }
+.heat .spark.s3 { --dx: -1.3rem; --dy: -1.1rem; animation-delay: 0.05s; }
+.heat .spark.s4 { --dx: -1.9rem; --dy: -0.2rem; animation-delay: 0.13s; }
+.heat .spark.s5 { --dx: -1.5rem; --dy: 0.8rem; animation-delay: 0.21s; }
+
+@keyframes heat-spark {
+    from {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translate(calc(var(--dx) * var(--spark, 1)), calc(var(--dy) * var(--spark, 1))) scale(0.25);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .heat.full {
+        animation: none;
+    }
+
+    .heat .spark {
+        display: none;
+    }
+}
+
 .text {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 1.35rem;

@@ -7,7 +7,8 @@ use leptos::prelude::*;
 use wasm_bindgen::prelude::*;
 
 use crate::dom::{CompositionListener, KeyListener, Ticker};
-use crate::engine::ErrorMode;
+use crate::engine::{ErrorMode, KeyResult};
+use crate::heat;
 use crate::history::history_view;
 use crate::keyboard::virtual_keyboard;
 use crate::layout::{self, Finger};
@@ -312,6 +313,29 @@ pub fn App() -> impl IntoView {
     // 每次开始练习换一个种子，避免每次都是同一段
     let seed = RwSignal::new(0x9E37_79B9_7F4A_7C15u64);
     let now = RwSignal::new(js_sys::Date::now());
+    // 火力条：打字蓄力、随时间衰减；爆发强度用最近 2.5 秒的即时速度
+    let heat = RwSignal::new(0.0f64);
+    // 爆发状态：满格进入，跌破 BURST_EXIT 才退出（滞回）
+    let burst = RwSignal::new(false);
+    let speed = RwSignal::new(heat::SpeedWindow::new(2_500.0));
+    let add_heat = move |correct: usize, mistakes: usize, at_ms: f64| {
+        if correct > 0 {
+            speed.update(|w| {
+                for _ in 0..correct {
+                    w.note(at_ms);
+                }
+            });
+        }
+        heat.update(|h| *h = heat::charge(*h, correct, mistakes));
+        if heat.with_untracked(|h| heat::is_full(*h)) {
+            burst.set(true);
+        }
+    };
+    let reset_heat = move || {
+        heat.set(0.0);
+        burst.set(false);
+        speed.update(|w| w.clear());
+    };
     let input_ref = NodeRef::<leptos::html::Input>::new();
     let file_ref = NodeRef::<leptos::html::Input>::new();
     let text_ref = NodeRef::<leptos::html::Div>::new();
@@ -354,6 +378,7 @@ pub fn App() -> impl IntoView {
         // 指法课要求打对当前字符才能前进
         session.set(Session::new(&text, lesson.lang, ErrorMode::StopOnError));
         ime_notice.set(false);
+        reset_heat();
         if lesson.lang == Lang::Zh {
             zh_mode.set(ZhMode::Ime);
         }
@@ -386,6 +411,7 @@ pub fn App() -> impl IntoView {
         };
         session.set(Session::new(&text, lang, error_mode));
         ime_notice.set(false);
+        reset_heat();
         source.set(src);
         test_limit.set(limit);
         shuangpin_mode.set(shuangpin);
@@ -454,6 +480,7 @@ pub fn App() -> impl IntoView {
         // 面向速度：打错自动补上期望键继续，错误计入正确率
         session.set(Session::shuangpin(&text, ErrorMode::Continue));
         ime_notice.set(false);
+        reset_heat();
         source.set(Source::Shuangpin { secs, material_id });
         test_limit.set(secs);
         shuangpin_mode.set(false);
@@ -519,6 +546,12 @@ pub fn App() -> impl IntoView {
         if route.get_untracked() != Route::Practice {
             return;
         }
+        // 火力随时间衰减（衰减速率随蓄力上升），即时速度窗口同时收缩
+        heat.update(|h| *h = heat::decay(*h, 0.1));
+        if heat.with_untracked(|h| *h < heat::BURST_EXIT) {
+            burst.set(false);
+        }
+        speed.update(|w| w.prune(now_ms));
         if let Some(limit) = test_limit.get_untracked() {
             if session.with_untracked(|s| s.stats(now_ms).secs) >= limit as f64 {
                 finish();
@@ -533,7 +566,21 @@ pub fn App() -> impl IntoView {
         };
         let text = input.value();
         let now_ms = js_sys::Date::now();
+        let before = session.with_untracked(|s| {
+            let stats = s.stats(now_ms);
+            (stats.cursor, stats.errors)
+        });
         session.update(|s| s.sync_text(&text, now_ms));
+        let after = session.with_untracked(|s| {
+            let stats = s.stats(now_ms);
+            (stats.cursor, stats.errors)
+        });
+        // 输入法一次可能提交多个字，按增量蓄力
+        add_heat(
+            after.0.saturating_sub(before.0),
+            after.1.saturating_sub(before.1) as usize,
+            now_ms,
+        );
         if session.with_untracked(|s| s.finished()) {
             if test_limit.get_untracked().is_some() {
                 maybe_extend();
@@ -893,7 +940,13 @@ pub fn App() -> impl IntoView {
                         }
                         ev.prevent_default();
                         let now_ms = js_sys::Date::now();
-                        session.update(|s| s.press_char(ch, now_ms));
+                        let mut result = KeyResult::Ignored;
+                        session.update(|s| result = s.press_char(ch, now_ms));
+                        match result {
+                            KeyResult::Correct => add_heat(1, 0, now_ms),
+                            KeyResult::Mistake => add_heat(0, 1, now_ms),
+                            KeyResult::Ignored => {}
+                        }
                         if session.with_untracked(|s| s.finished()) {
                             if test_limit.get_untracked().is_some() {
                                 maybe_extend();
@@ -1356,6 +1409,47 @@ pub fn App() -> impl IntoView {
                                     format!("width:{percent:.1}%")
                                 }></i>
                             </div>
+
+                            {move || {
+                                let h = heat.get();
+                                let power = heat::burst_power(speed.with(|w| w.cpm()));
+                                let full = burst.get();
+                                let class = if full { "heat full" } else { "heat" };
+                                // 蓄力越高越鲜艳；爆发强度（速度）控制辉光、火花距离与动画快慢
+                                let style = format!(
+                                    "--sat:{:.0}%;--bri:{:.0}%;--glow:{:.1}px;--spark:{:.2};--dur:{:.2}s",
+                                    60.0 + h * 140.0,
+                                    72.0 + h * 55.0,
+                                    5.0 + power * 15.0,
+                                    0.55 + power * 1.05,
+                                    0.8 - power * 0.4,
+                                );
+                                let fill = format!(
+                                    "width:{:.1}%;background-position-x:{:.0}%",
+                                    h * 100.0,
+                                    h * 100.0,
+                                );
+                                view! {
+                                    <div class="heat-row">
+                                        <span class="heat-label">"火力"</span>
+                                        <div
+                                            class=class
+                                            style=style
+                                            title="打字蓄力：满格爆发，速度越快特效越强"
+                                        >
+                                            <i style=fill></i>
+                                            {full
+                                                .then(|| {
+                                                    (0..6)
+                                                        .map(|i| {
+                                                            view! { <b class=format!("spark s{i}")></b> }
+                                                        })
+                                                        .collect_view()
+                                                })}
+                                        </div>
+                                    </div>
+                                }
+                            }}
 
                             <div
                                 node_ref=text_ref

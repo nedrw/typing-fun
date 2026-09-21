@@ -2,7 +2,7 @@
 //! 界面通过统一接口读取。
 
 use crate::cn_engine::CnEngine;
-use crate::engine::{Engine, ErrorMode};
+use crate::engine::{Engine, ErrorMode, KeyResult};
 use crate::lessons::Lang;
 use crate::model::{CharState, Stats};
 use crate::sp_engine::{SpEngine, SpTarget};
@@ -26,16 +26,12 @@ impl Session {
         Self::Sp(SpEngine::new(text, mode))
     }
 
-    /// 英文 / 双拼：处理一次字符击键。中文模式忽略（输入由输入框驱动）。
-    pub fn press_char(&mut self, ch: char, now_ms: f64) {
+    /// 英文 / 双拼：处理一次字符击键并返回结果。中文模式忽略（输入由输入框驱动）。
+    pub fn press_char(&mut self, ch: char, now_ms: f64) -> KeyResult {
         match self {
-            Self::En(engine) => {
-                engine.press(ch, now_ms);
-            }
-            Self::Sp(engine) => {
-                engine.press(ch, now_ms);
-            }
-            Self::Zh(_) => {}
+            Self::En(engine) => engine.press(ch, now_ms),
+            Self::Sp(engine) => engine.press(ch, now_ms),
+            Self::Zh(_) => KeyResult::Ignored,
         }
     }
 
