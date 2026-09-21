@@ -66,7 +66,10 @@ cargo tauri build        # 内部先跑 trunk build --release，再编译桌面�
 ```
 
 - 产物在 `target/release/bundle/`：macOS `dmg`/`app`，Windows `msi`/`nsis`，Linux `deb`/`rpm`/`AppImage`
-- CI（`.github/workflows/ci.yml`）：test job（fmt / clippy / 测试 / wasm 编译检查）+ 三平台构建矩阵（`macos-latest` arm64、`macos-13` x86_64、`ubuntu-22.04`、`windows-latest`）；推 `v*` tag 时由 tauri-action 建草稿 release，PR/分支构建则上传安装包产物
+- CI（`.github/workflows/ci.yml`）：push/PR 跑 test job（fmt / clippy / 测试 / wasm 检查）；**推 `v*` tag 或手动触发**时才跑三平台矩阵（macOS arm64 + Intel 交叉编译、Linux、Windows），由 tauri-action 建草稿 release
+- 网页版（`.github/workflows/pages.yml`）：每次推 main 自动部署到 GitHub Pages —— <https://nedrw.github.io/typing-fun/>，浏览器里数据走 localStorage
+- 发版流程：改 `Cargo.toml` / `src-tauri/tauri.conf.json` 里的版本号 → `git tag vX.Y.Z && git push origin vX.Y.Z` → 到 Releases 页把草稿发布
+- 想单独跑安装包矩阵：Actions → CI → Run workflow（不用打 tag，产物作为 workflow artifacts 上传）
 - 数据目录按平台走 `app_data_dir`：macOS `~/Library/Application Support/com.drmin.typing-fun/data/`、Windows `%APPDATA%\com.drmin.typing-fun\data\`、Linux `~/.local/share/com.drmin.typing-fun/data/`
 - **尚未配置**（涉及账号/费用）：macOS 签名与公证、Windows 代码签名、自动更新（`tauri-plugin-updater`）；CSP 目前为 `null`（Trunk 会注入内联启动脚本，要收紧得先解决 nonce）
 
