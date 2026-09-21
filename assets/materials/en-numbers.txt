@@ -1,40 +1,326 @@
-Quarterly Report #4, FY2025
+Number & symbol drills
 
-Our revenue for Q3 was $1,284,590.75, up 18.4% from $1,085,120.30 a year ago. We shipped 27,480
-units, which is 3,912 more than planned, and cut costs by 6.5% while raising output by 12%.
+2,455 + 442 = 2,897
+1607 * 942 = 1,513,794
+1,329 - 727 = 602
+1,847 - 390 = 1,457
+6,267 + 277 = 6,544
+8,119 - 34 = 8,085
+6,567 - 7 = 6,560
+3,774 / 311 = 12.14
+3,812 / 471 = 8.09
+5539 * 670 = 3,711,130
+9,287 / 349 = 26.61
+5,159 / 968 = 5.33
+8063 * 209 = 1,685,167
+830 / 786 = 1.06
+6192 * 312 = 1,931,904
+6,302 / 761 = 8.28
+769 / 100 = 7.69
+520 * 261 = 135,720
+1,626 + 752 = 2,378
+964 / 143 = 6.74
+9286 * 832 = 7,725,952
+654 / 220 = 2.97
+3312 * 653 = 2,162,736
+11 + 515 = 526
+6,970 + 989 = 7,959
+545 / 517 = 1.05
+8,804 - 984 = 7,820
+6,608 - 993 = 5,615
+5,886 / 242 = 24.32
+7,024 - 698 = 6,326
+1,759 + 111 = 1,870
+9,654 - 756 = 8,898
+7,056 + 104 = 7,160
+2,267 - 831 = 1,436
+5,697 + 189 = 5,886
+4,502 / 986 = 4.57
+3,707 / 461 = 8.04
+216 * 853 = 184,248
+5,069 / 728 = 6.96
+5891 * 428 = 2,521,348
+6,545 / 635 = 10.31
+3669 * 396 = 1,452,924
+7,407 - 758 = 6,649
+5,971 - 363 = 5,608
+9,306 + 752 = 10,058
+4778 * 735 = 3,511,830
+5,049 / 635 = 7.95
+355 - 157 = 198
+1,684 + 488 = 2,172
+5,511 - 158 = 5,353
 
-Budget & Spending
-Item 1: raw materials $42,180 (12.5% of total)
-Item 2: shipping & handling $3,905.20 (1.2%)
-Item 3: salaries for 34 staff $218,600 - bonuses $14,275 = $232,875
-Subtotal: 42,180 + 3,905.20 + 232,875 = $278,960.20
-Total with tax at 7.25%: $299,184.81
+Output rose 38.8% while cost fell 3.8%.
+Output rose 40.1% while cost fell 3.2%.
+Output rose 40.6% while cost fell 3.8%.
+Output rose 23.4% while cost fell 3.4%.
+Output rose 35.3% while cost fell 7.2%.
+Output rose 7.5% while cost fell 8.3%.
+Output rose 13.4% while cost fell 4.4%.
+Output rose 42.2% while cost fell 7.8%.
+Output rose 38.0% while cost fell 8.3%.
+Output rose 8.0% while cost fell 7.6%.
+Output rose 44.1% while cost fell 7.1%.
+Output rose 43.0% while cost fell 9.1%.
+Output rose 47.1% while cost fell 9.7%.
+Output rose 20.0% while cost fell 9.5%.
+Output rose 36.9% while cost fell 6.3%.
+Output rose 38.9% while cost fell 3.5%.
+Output rose 23.5% while cost fell 8.7%.
+Output rose 22.8% while cost fell 7.3%.
+Output rose 3.1% while cost fell 5.0%.
+Output rose 29.3% while cost fell 2.2%.
+Output rose 43.4% while cost fell 5.1%.
+Output rose 17.2% while cost fell 2.5%.
+Output rose 2.9% while cost fell 0.5%.
+Output rose 9.4% while cost fell 9.5%.
+Output rose 28.5% while cost fell 4.3%.
+Output rose 30.2% while cost fell 6.2%.
+Output rose 3.1% while cost fell 1.0%.
+Output rose 4.2% while cost fell 8.0%.
+Output rose 2.4% while cost fell 3.2%.
+Output rose 47.4% while cost fell 5.3%.
 
-Codes & Tags
-Order #A-1049 shipped on 09/14/2025 at 08:45. Batch codes: 77-K-3301, 88-Q-4102, 99-Z-5503. Ticket
-refs 2^10, 3^4, 5^3 (see appendix 6 and 7). Ratios 4:1, 16:2, 64:4 all stay under 100%!
+2023-05-20 03:19:38
+2022-08-06 23:03:47
+2025-10-01 16:17:45
+2019-01-19 03:23:03
+2026-10-25 06:48:49
+2019-03-08 08:40:51
+2022-04-22 11:38:49
+2021-05-17 16:07:04
+2022-09-24 13:04:48
+2022-10-10 08:12:49
+2020-06-19 10:45:11
+2021-08-17 13:03:47
+2024-12-18 09:15:04
+2022-04-27 20:30:39
+2020-10-20 18:12:34
+2023-06-05 21:55:35
+2023-03-07 12:01:10
+2023-11-02 16:22:17
+2021-01-26 10:12:20
+2019-04-21 02:10:56
+2020-01-08 03:44:29
+2022-10-14 04:04:44
+2024-03-28 06:26:30
+2025-07-24 21:39:23
+2026-01-12 10:00:52
+2021-04-10 08:36:36
+2020-06-05 17:45:15
+2024-05-08 02:27:03
+2021-06-04 16:40:18
+2025-12-11 01:29:10
 
-Quick Math
-7 + 8 = 15; 15 - 6 = 9; 9 * 9 = 81; 81 / 3 = 27; 2^8 = 256; 10^3 = 1000; (4 + 6) * 5 = 50;
-100% - 35% = 65%. Round 1: 3.14159 is about 3.14; Round 2: 2.71828 is about 2.72; Round 3: 1.61803
-is about 1.62.
+(361) 203-9401
+(275) 900-9771
+(497) 366-4209
+(570) 790-1288
+(379) 964-5735
+(820) 689-1878
+(834) 214-3967
+(851) 440-7346
+(649) 603-9609
+(549) 774-8769
+(685) 421-4835
+(692) 326-6901
+(431) 746-7912
+(868) 914-4400
+(731) 259-6216
+(306) 282-9407
+(505) 346-4904
+(501) 351-2189
+(836) 947-6625
+(899) 810-2058
+(607) 538-4597
+(506) 793-5355
+(399) 384-1209
+(227) 659-2274
+(370) 382-3430
 
-Kitchen Notes
-Preheat to 375 F. Mix 2 cups (480 ml) of water with 1.5 tsp salt and 3/4 cup sugar. Bake 22-25
-minutes at 180 C. Serves 4-6. Cost per serving: $2.35, or $11.75 for the whole tray.
+$211,076.53
+$821,180.11
+$637,494.03
+$324,604.95
+$917,835.44
+$685,056.15
+$304,084.43
+$28,964.23
+$798,100.92
+$935,323.68
+$491,995.76
+$762,060.94
+$288,305.83
+$893,658.08
+$249,420.92
+$251,002.82
+$277,827.42
+$764,647.21
+$363,119.66
+$127,845.27
+$177,798.15
+$114,704.06
+$997,040.28
+$567,652.63
+$21,607.38
 
-Schedule
-06:00 wake up; 07:30 commute on line 4, car 12; 09:00-12:30 meetings in 3 rooms with 18 people;
-13:00 lunch ($12.40); 15:45 call @ +1-555-0199; 18:20 gym for 45 minutes, 320 kcal; 21:10 read
-pages 180-215; 23:00 sleep.
+Item 01: 65,281 units, $3,179.26, 12.5% of total
+Item 02: 89,337 units, $7,774.57, 34.8% of total
+Item 03: 79,611 units, $3,668.65, 89.5% of total
+Item 04: 59,976 units, $8,361.43, 85.3% of total
+Item 05: 44,887 units, $6,187.52, 35.0% of total
+Item 06: 29,673 units, $8,948.48, 27.2% of total
+Item 07: 16,915 units, $3,781.49, 51.0% of total
+Item 08: 1,770 units, $230.08, 47.4% of total
+Item 09: 96,695 units, $840.60, 17.4% of total
+Item 10: 99,959 units, $1,590.07, 64.4% of total
+Item 11: 53,757 units, $1,077.16, 59.5% of total
+Item 12: 20,380 units, $6,913.95, 68.1% of total
+Item 13: 98,248 units, $5,230.35, 18.7% of total
+Item 14: 1,033 units, $9,445.54, 46.0% of total
+Item 15: 35,278 units, $9,854.80, 18.8% of total
+Item 16: 25,050 units, $1,081.94, 97.7% of total
+Item 17: 3,908 units, $5,761.77, 32.6% of total
+Item 18: 76,152 units, $8,861.38, 24.4% of total
+Item 19: 88,531 units, $9,881.51, 58.5% of total
+Item 20: 62,298 units, $3,831.58, 91.5% of total
+Item 21: 90,051 units, $1,047.75, 90.0% of total
+Item 22: 27,465 units, $7,217.13, 36.5% of total
+Item 23: 39,353 units, $4,361.33, 40.0% of total
+Item 24: 79,456 units, $6,693.81, 54.5% of total
+Item 25: 91,039 units, $9,747.32, 47.5% of total
+Item 26: 50,919 units, $3,879.53, 10.1% of total
+Item 27: 33,274 units, $7,757.22, 23.2% of total
+Item 28: 69,176 units, $9,631.74, 50.9% of total
+Item 29: 52,692 units, $3,658.69, 21.8% of total
+Item 30: 95,560 units, $6,787.47, 10.0% of total
 
-Ledger
-2025-01-07 | INV-0042 | $1,050.00
-2025-02-14 | INV-0088 | $2,375.50
-2025-03-21 | INV-0131 | $945.75
-Balance: $4,371.25 (#3 of 4 pages). File name: report_2025_q3.txt. Footnotes (*, **, ***) explain
-the 5 assumptions.
+1/2 3/4 5/8 7/16 9/32
+0.1 0.01 0.001 0.0001
+0.1 0.01 0.001 0.0001
+()[]{}<>
+0.1 0.01 0.001 0.0001
+{}[]|\:;"'<>,.?/
+()[]{}<>
++= -_ *& ^% $# @!
+0.1 0.01 0.001 0.0001
+{}[]|\:;"'<>,.?/
+()[]{}<>
+!@#$%^&*()_+-=
+{}[]|\:;"'<>,.?/
+10 20 30 40 50 60 70 80 90
++= -_ *& ^% $# @!
+0.1 0.01 0.001 0.0001
+1/2 3/4 5/8 7/16 9/32
+`~!@#$%^&*()_+
+10 20 30 40 50 60 70 80 90
+1,000 10,000 100,000 1,000,000
+1/2 3/4 5/8 7/16 9/32
+1,000 10,000 100,000 1,000,000
+`~!@#$%^&*()_+
+{}[]|\:;"'<>,.?/
+{}[]|\:;"'<>,.?/
+0.1 0.01 0.001 0.0001
+!@#$%^&*()_+-=
+10 20 30 40 50 60 70 80 90
++= -_ *& ^% $# @!
+0 1 2 3 4 5 6 7 8 9 0
 
-Notes
-Please confirm by 5:30 PM (UTC-8) on 12/31/2025, no later! Send to unit-7@example.com or call
-555-0142 ext. 9. Quote ref: INV2025#7788! Discount codes: SAVE10%, SAVE15%, SAVE20% and NEW25%.
+Keypad: 1 5 2 8 0 4 9 0 3 3
+Keypad: 6 7 2 8 9 4 0 5 9 9
+Keypad: 5 9 1 7 3 4 4 7 2 2
+Keypad: 8 6 8 5 0 0 2 2 8 1
+Keypad: 4 5 3 0 9 2 3 1 4 8
+Keypad: 6 0 1 6 1 4 8 6 8 6
+Keypad: 1 3 4 9 6 3 4 4 3 4
+Keypad: 5 9 5 1 2 4 3 1 8 2
+Keypad: 0 6 5 6 9 7 7 6 1 1
+Keypad: 6 7 2 3 9 4 1 6 5 9
+Keypad: 4 5 2 1 2 0 1 8 5 2
+Keypad: 8 8 6 0 1 3 8 7 6 6
+Keypad: 1 0 1 3 7 7 8 6 9 6
+Keypad: 4 4 6 2 2 2 4 8 7 8
+Keypad: 4 2 9 6 3 8 0 5 6 3
+Keypad: 2 9 4 1 1 5 8 7 7 3
+Keypad: 7 6 4 4 7 9 1 6 2 7
+Keypad: 1 8 9 8 0 8 8 9 9 1
+Keypad: 0 0 3 7 0 3 2 0 2 5
+Keypad: 1 4 5 6 7 5 4 8 7 5
+Keypad: 8 6 5 7 9 6 9 7 8 7
+Keypad: 2 0 3 4 6 4 5 5 8 5
+Keypad: 1 7 9 1 5 7 4 6 8 8
+Keypad: 0 5 0 1 7 4 4 1 1 6
+Keypad: 5 7 4 8 2 3 1 3 5 9
+Keypad: 4 1 7 7 5 1 7 0 4 5
+Keypad: 9 7 2 8 1 3 2 9 5 9
+Keypad: 1 0 4 9 5 5 3 4 7 6
+Keypad: 6 0 9 3 2 3 5 5 5 8
+Keypad: 4 8 5 9 2 1 0 2 7 8
+
+1,441 ft = 1379.88 m, 69.3 F = -38.7 C
+0x8A4F75 = 13,462,399
+lat 84.6459, lon 35.0759
+611 ft = 2317.17 m, 75.1 F = -25.5 C
+lat 18.5515, lon 126.0230
+0x5F2FCC = 986,095
+SKU E80-1719-X
+5,870 ft = 292.26 m, 55.6 F = -2.7 C
+614 ft = 1997.03 m, 106.3 F = -22.8 C
+6,092 ft = 2421.79 m, -22.3 F = -15.9 C
+version 4.10.41 (build 3356)
+SKU C44-5796-Y
+lat 20.0549, lon 160.8928
+0xD72353 = 6,416,171
+5,794 ft = 1613.15 m, 3.9 F = -29.4 C
+SKU E47-8260-X
+version 3.8.13 (build 8049)
+0x57CEB9 = 3,274,687
+version 6.18.84 (build 6497)
+SKU A57-1072-Y
+lat 2.2830, lon 163.4714
+4,322 ft = 1081.03 m, 60.9 F = 29.8 C
+0xA90F8B = 3,689,906
+0xD3425B = 3,829,027
+926 ft = 417.33 m, 99.2 F = -34.9 C
+0x0F15A3 = 13,299,551
+4,107 ft = 2450.22 m, -34.2 F = 32.5 C
+version 1.7.12 (build 1033)
+lat -32.2433, lon 93.7803
+SKU B32-8594-Y
+
+Q1 revenue was $4,577,692.30, up 18.8% from $1,599,122.41 last year.
+Q3 revenue was $2,469,994.09, up 23.8% from $9,540,119.66 last year.
+Q3 revenue was $1,762,631.69, up 25.1% from $5,859,902.44 last year.
+Q1 revenue was $5,771,146.05, up 6.8% from $6,861,494.10 last year.
+Q4 revenue was $3,643,172.65, up 3.2% from $3,533,993.71 last year.
+Q2 revenue was $1,412,158.53, up 27.1% from $7,224,890.24 last year.
+Q2 revenue was $9,689,077.79, up 26.6% from $3,954,574.25 last year.
+Q1 revenue was $8,048,942.94, up 29.8% from $7,630,844.71 last year.
+Q3 revenue was $211,796.91, up 20.3% from $8,429,244.80 last year.
+Q2 revenue was $1,035,900.05, up 20.3% from $2,650,706.12 last year.
+Q1 revenue was $4,263,701.76, up 22.8% from $8,636,116.04 last year.
+Q1 revenue was $4,116,943.75, up 18.5% from $6,250,090.84 last year.
+Q2 revenue was $8,390,084.55, up 12.4% from $1,314,273.00 last year.
+Q1 revenue was $7,156,762.54, up 17.0% from $746,821.04 last year.
+Q1 revenue was $2,764,625.94, up 19.0% from $7,626,469.24 last year.
+Q1 revenue was $2,068,471.47, up 18.7% from $3,031,678.53 last year.
+Q1 revenue was $7,596,099.88, up 10.1% from $6,871,840.95 last year.
+Q4 revenue was $8,395,836.92, up 26.8% from $6,701,674.43 last year.
+Q2 revenue was $1,380,082.90, up 6.7% from $8,049,467.52 last year.
+Q3 revenue was $265,787.46, up 10.0% from $352,977.96 last year.
+Q2 revenue was $5,340,245.57, up 13.9% from $971,322.40 last year.
+Q2 revenue was $4,899,797.22, up 15.4% from $3,022,096.47 last year.
+Q3 revenue was $5,289,862.73, up 1.0% from $7,410,226.08 last year.
+Q4 revenue was $2,221,768.22, up 18.4% from $8,818,139.51 last year.
+Q1 revenue was $2,720,537.60, up 21.3% from $6,170,988.09 last year.
+Q3 revenue was $1,130,771.10, up 15.3% from $1,142,030.82 last year.
+Q4 revenue was $5,021,260.40, up 16.8% from $7,883,058.96 last year.
+Q4 revenue was $718,688.12, up 6.5% from $2,549,743.26 last year.
+Q1 revenue was $4,923,282.10, up 29.7% from $4,295,247.10 last year.
+Q1 revenue was $1,195,256.85, up 19.9% from $218,942.18 last year.
+Q1 revenue was $7,894,625.98, up 5.7% from $5,965,639.37 last year.
+Q2 revenue was $6,389,609.42, up 24.5% from $9,939,309.42 last year.
+Q2 revenue was $280,662.82, up 15.8% from $3,416,332.61 last year.
+Q1 revenue was $6,106,798.52, up 4.1% from $8,232,722.61 last year.
+Q3 revenue was $541,864.16, up 21.7% from $410,756.29 last year.

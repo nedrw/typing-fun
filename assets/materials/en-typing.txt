@@ -1,8 +1,315 @@
-Practice makes perfect, but only deliberate practice makes progress. Sit up straight, keep your
-wrists level, and rest your fingers on the home row before you start. Accuracy comes first, and
-speed is what accuracy turns into once the movement becomes automatic. When you feel tension in
-your hands, stop and shake them out, then begin again a little slower than before.
+Setup and posture
 
-Keep your eyes on the screen, not on your hands. If you catch yourself looking down, that is the
-signal to slow down rather than to try harder. Short sessions every day beat one long session a
-week, because the point is not to finish the text but to teach your fingers where the keys live.
+Sit upright with your back supported and both feet flat on the floor.
+Keep your elbows close to your body and bent at about ninety degrees.
+Adjust the chair height so your forearms are level with the keyboard.
+Keep your wrists straight, not resting on the desk or the wrist pad.
+Let your shoulders drop; tension there travels straight into your fingers.
+Place the screen at eye level so you do not tilt your head down.
+Keep the screen about an arm's length away from your eyes.
+Use a light touch; the keys need far less force than most people apply.
+Dim the room slightly so the screen is the brightest thing you look at.
+Keep your desk clear so your hands have room to move.
+Put the keyboard flat or with a very slight negative tilt.
+Learn where the Enter, Shift, Backspace, and Tab keys sit by feel.
+Do not look at the keyboard while you type; look at the screen.
+Say the letters in your head at first, then let the words take over.
+Warm up your fingers before a long session with a few easy lines.
+Cold hands make more mistakes, so wash them in warm water if needed.
+Keep a glass of water nearby and sip between exercises.
+Turn off notifications while you practice; interruptions break rhythm.
+Practice in a quiet place until the movements become automatic.
+Use the same keyboard every day while you are still learning.
+A mechanical keyboard is not required; consistency matters more.
+Set the repeat delay long enough that a held key does not flood the line.
+Check your keyboard layout once, then trust it.
+If the layout differs from the labels, print a small map and tape it down.
+Keep the mouse close so your right hand does not travel far.
+Use keyboard shortcuts instead of the mouse whenever you can.
+Learn to press Shift with the opposite hand from the letter you type.
+Use the right Shift for letters typed with the left hand, and the reverse.
+Use Caps Lock only for long runs of capitals, never for single letters.
+Enter should be pressed with the right little finger, not the whole hand.
+
+The home row and your fingers
+
+Rest your fingers on the home row: a, s, d, f and j, k, l, semicolon.
+Feel the small bumps on the f and j keys; they mark your index fingers.
+Left little finger owns q, a, z, and the keys to their left.
+Left ring finger owns w, s, and x.
+Left middle finger owns e, d, and c.
+Left index finger owns r, t, f, g, v, and b.
+Right index finger owns y, u, h, j, n, and m.
+Right middle finger owns i, k, and the comma.
+Right ring finger owns o, l, and the period.
+Right little finger owns p, semicolon, slash, and the keys to their right.
+The thumbs share the space bar; use the one that feels natural.
+Move only the finger you need, not the whole hand.
+After every reach, return that finger to its home key.
+Keep the other fingers resting while one finger reaches out.
+Reach upward for the top row and downward for the bottom row.
+Do not slide your hand sideways to reach a key.
+The number row belongs to the same fingers as the letters below it.
+For 1 and 2 use the left little finger and left ring finger.
+For 8, 9, and 0 use the right middle, ring, and little fingers.
+Treat the shifted symbols as the same key: ! lives on 1, @ on 2, and so on.
+The apostrophe and the semicolon share the right little finger.
+Brackets, braces, and pipes all live under the right little finger.
+Backspace is a right little finger key, not a hand movement.
+Tab is a left little finger reach, and Escape is a left little finger stretch.
+Keep your index fingers anchored until a reach is genuinely needed.
+When you type a space, let the thumb move alone.
+Practice the home row until you can find f and j with your eyes closed.
+Type full words instead of single letters once the row feels familiar.
+Alternate hands as much as possible; it keeps the rhythm even.
+Avoid crossing fingers over each other for awkward combinations.
+If a key is hard to reach, check your hand position instead of forcing it.
+
+Accuracy before speed
+
+Accuracy is the habit; speed is the result of repeating it.
+Type slowly enough that you can hit the right key every time.
+A wrong character costs far more time than a slow correct one.
+When you feel yourself speeding up past control, slow down at once.
+Correct mistakes immediately, then continue without dwelling on them.
+Do not delete an entire line because of one error.
+Read the text one word ahead of the keys you are pressing.
+Look at whole words, not single characters.
+Let capital letters and punctuation be part of the word you see.
+If you keep missing one key, stop and drill that key alone.
+Check whether the mistake comes from the finger or from your eyes.
+Most mistakes come from looking away or from moving the whole hand.
+Keep your eyes on the text and let your fingers do the finding.
+Accuracy at 30 words per minute beats flailing at 80.
+Never trade correctness for the feeling of speed.
+If your error rate rises above a few percent, slow down.
+Finish the line even if it is slow; stopping breaks the rhythm.
+The last three words of a line deserve as much care as the first.
+Do not guess words ahead of what the text actually says.
+When you backspace, retype the whole word, not just one letter.
+Watch for doubled letters and missing letters in common words.
+Slow down before punctuation, then resume your pace.
+Keep your movements small and your presses crisp.
+Rest your eyes on the line as if you were reading, not copying.
+Accuracy improves fastest in short, focused sessions.
+Correct posture and light pressure reduce accidental key presses.
+
+Rhythm and speed
+
+Think of typing as music: steady beats beat sudden bursts.
+Find a rhythm you can hold for the whole exercise.
+Speed grows from removing wasted motion, not from pressing harder.
+Keep both hands moving; a still hand is wasted time.
+Let the next key's finger start moving before you finish the current one.
+Aim for a smooth stream of characters rather than individual keystrokes.
+Do not pause after finishing a word; move straight into the next.
+Breathe evenly and keep your shoulders still while you type.
+Relax the ring and little fingers; they tense up first.
+When you feel tense, shake out your hands and start again slowly.
+Increase your speed only after accuracy at the current pace is stable.
+Push the pace for short bursts, then return to your normal rhythm.
+A metronome or a steady beat in your head can help.
+Count in groups of four or five characters to keep a pulse.
+Fast typing looks calm; frantic typing looks busy and produces errors.
+Use the strength of each finger: index fingers do the most work.
+Give the weaker fingers more practice, not less.
+Repeat the same tricky word ten times rather than the whole line once.
+Speed comes from knowing where the key is, not from looking for it.
+Trust your fingers; hesitation costs more than a wrong key.
+Keep the same rhythm across punctuation and capitals.
+Slow is smooth, smooth is fast; give the habits time to settle.
+Record your best speed and try to hold it comfortably, not just once.
+Stop a speed drill while you still feel in control.
+Chase consistency first, then raise the ceiling.
+
+Habits to avoid
+
+Do not rest your wrists on the desk while your fingers are typing.
+Do not look down to find a key; that habit undoes weeks of practice.
+Do not move your whole hand for a key your finger can reach.
+Do not hammer the keys; pressure does not create speed.
+Do not hold your breath while concentrating.
+Do not let one weak finger force the others out of position.
+Do not chase a personal best on every session.
+Do not practice only what you are already good at.
+Do not skip the home row because it feels slow.
+Do not ignore a repeated mistake; name it and drill it.
+Do not type through pain in your wrists or forearms.
+Do not keep a death grip on the mouse between sentences.
+Do not slouch when you get tired; take a break instead.
+Do not compare your speed with anyone else's.
+Do not practice for two hours once a week.
+Do not use the same three lines for every session.
+Do not let the cursor run ahead of your eyes.
+Do not delete the whole paragraph to fix a single typo.
+Do not type with two fingers and hope for improvement.
+Do not skip the easy drills; they are the foundation.
+
+A practice plan that works
+
+Practice a little every day; fifteen minutes beats two hours on Sunday.
+Split your session into a warm-up, a main drill, and a cool-down.
+Warm up with the home row and easy words.
+Spend most of the session on your current weak spot.
+Finish with something easy so you end on a good note.
+Review your error keys at the end of each session.
+Write down the three keys that caused the most trouble.
+Start the next session by drilling those three keys.
+Change the material often enough to stay interested.
+Revisit old lessons; they should feel easier each time.
+Use timed tests to measure, not to learn.
+Take a full day off when your hands feel tired.
+Track your speed weekly, not after every line.
+Measure accuracy together with speed; one without the other is noise.
+Set a goal for the month, not for the day.
+Increase difficulty when your accuracy stays above ninety-five percent.
+Keep a short log of what felt hard and what felt easy.
+Alternate between text you enjoy and text you need.
+Practice punctuation and capitals as their own drill.
+Practice numbers as their own drill; they use longer reaches.
+Practice with a metronome once a week to check your rhythm.
+Review your posture in a mirror or with a photo now and then.
+Ask someone to watch your hands and point out wasted motion.
+Reward yourself for consistency, not for a single fast run.
+When progress stalls, change the drill, not the goal.
+A plateau usually means your accuracy is quietly improving.
+Retyping a text you know well shows whether the skill is automatic.
+Type a paragraph aloud from memory as a fun check.
+Teach the home row to someone else; it sharpens your own habit.
+
+Drills worth repeating
+
+Type the home row keys in order, then backward, ten times.
+Type each letter of the alphabet three times without looking.
+Type the alphabet in pairs: ab, cd, ef, and so on.
+Type common two-letter combinations from the home row.
+Drill the left hand alone for one line, then the right hand.
+Type a line using only the index fingers, then only the middle fingers.
+Practice the four hardest reaches for your little fingers.
+Type a paragraph of plain lowercase words with no punctuation.
+Type the same paragraph with correct capitals and punctuation.
+Type a paragraph of numbers and symbols only.
+Type a paragraph with alternating hands, like "the cat sat".
+Drill doubled letters: ss, ll, ee, oo, tt, ff.
+Drill common endings: ing, tion, ment, ness, ly, ed.
+Drill common beginnings: th, wh, sh, ch, pr, tr, str.
+Type the same sentence with your eyes closed between words.
+Type with a slight delay after each mistake to reset your rhythm.
+Read a sentence once, then type it from memory.
+Type a sentence while counting out loud to break the hesitation habit.
+Use a short word list of your most frequent errors.
+Type a full page without looking at the keyboard, however slow.
+Time yourself on the same paragraph once a week.
+Compare the timed run with last week's, not with anyone else's.
+Drill the space bar by typing alternating single letters.
+Drill the Enter key by typing a list of short lines.
+Drill Tab and Shift by typing a small table.
+Type a paragraph of dialogue to practice quotation marks.
+Type a paragraph with many commas and semicolons.
+Type a paragraph of all caps, then one of mixed case.
+Type a short paragraph backward, one word at a time, for control.
+Finish every drill by retyping your worst line correctly.
+
+Health and comfort
+
+Take a short break every twenty to thirty minutes.
+Stand up and stretch your forearms and shoulders during the break.
+Look at something far away for twenty seconds to rest your eyes.
+Relax your grip; sore fingers usually mean too much force.
+Keep your hands warm; cold fingers make more mistakes.
+Stretch your fingers gently before and after practice.
+If your wrists ache, stop and rest for a day or two.
+Adjust the keyboard height rather than bending your wrists.
+Avoid resting your elbows on hard armrests for long periods.
+Blink often; staring at the screen dries your eyes.
+Keep the screen clean so you do not lean in to read it.
+Use a document holder when typing from paper.
+Keep the room at a comfortable temperature.
+Wear glasses if you need them; squinting adds tension.
+Do not type through numbness or tingling in your hands.
+Move your whole arm when reaching for the mouse, not just the wrist.
+Keep the mouse at the same height as the keyboard.
+Reduce glare from windows behind or in front of the screen.
+Sit far enough back that your elbows stay loose.
+Change your sitting position slightly every few minutes.
+
+Mindset and progress
+
+Speed is a byproduct of accuracy and relaxation, not of effort.
+Every expert typist was once slow and clumsy.
+Mistakes are information about which key to practice next.
+A bad session is still practice; do not throw it away.
+Progress is not linear; plateaus are normal and temporary.
+Compare yourself with last month, not with last year.
+Celebrate small wins: one more accurate line is a win.
+Keep the sessions short enough that you want to return tomorrow.
+If you dread practice, make the material easier or shorter.
+Type things you find interesting; interest sustains practice.
+Do not treat a slow day as proof that you cannot improve.
+Rest is part of training, not a break from it.
+Consistency beats intensity over weeks and months.
+When you feel frustrated, slow down instead of pushing harder.
+Finish each session knowing one thing you did well.
+Learn from a wrong key instead of apologizing for it.
+Trust the process even when the numbers move slowly.
+Teach your hands patience; they learn by repetition, not by pressure.
+
+Beyond the basics
+
+Learn the shortcuts for your editor and browser to reduce mouse use.
+Use both hands for shortcuts: one for the modifier, one for the key.
+Learn to touch type numbers without leaving the home row.
+Learn the shifted symbols as their own small vocabulary.
+Practice code or markup if you write it; brackets need their own drill.
+Practice writing in your second language; the letter patterns differ.
+Practice typing from dictation once in a while.
+Practice reading ahead in longer texts.
+Type a page of a book every day until it becomes boring.
+When it becomes boring, your hands have learned it.
+Move on to a new text and keep the old one for warm-ups.
+Test yourself on unfamiliar material, not just the text you rehearsed.
+Type on a laptop keyboard now and then; the feel is different.
+Learn where the awkward keys are on each keyboard you use.
+Keep a small error log and review it weekly.
+Aim to make the keyboard disappear from your attention.
+When you stop thinking about the keys, you are done learning the basics.
+Everything after that is refinement.
+
+Typing in the real world
+
+Write a short email without correcting anything until the end.
+Draft a note to yourself in full sentences instead of fragments.
+Type a shopping list with numbers and units.
+Type a recipe and pay attention to the numbers and the order.
+Type a schedule with times, dates, and weekday names.
+Type an address and a phone number from memory.
+Type a paragraph from a news article and keep the punctuation exact.
+Type a message you would normally send on your phone.
+Type a short poem and let the line breaks be part of the rhythm.
+Type a page of dialogue and keep the quotation marks straight.
+Type a table using Tab between the columns.
+Type a list using Enter at the end of each line.
+Type a paragraph in all caps, then convert it to sentence case in your head.
+Type a URL and then delete it, letter by letter.
+Type a file path with slashes, dots, and dashes.
+Type a short command line and check every symbol.
+Type a few lines of code and match the indentation.
+Type a paragraph of mixed Chinese and English if you use both.
+Type a sentence with every kind of bracket in it.
+Type a sentence with three commas and no full stop, then add one.
+Type a question and answer pair as fast as you can read them.
+Type a paragraph while a timer runs, then stop at exactly one minute.
+Type the same paragraph again and try to beat your accuracy, not your speed.
+Type a paragraph from a page you have not read before.
+Type a paragraph from a book you know by heart and notice the old habits.
+Type a line of lyrics and keep the capitals where the title has them.
+Type a line of dialogue twice: once plainly, once with emphasis.
+Type a short paragraph and read it back to yourself for errors.
+Type an error message exactly as it appears on screen.
+Type a version number and a date without looking at the keyboard.
+Type a sentence that contains every vowel.
+Type a sentence that contains no repeated letters if you can.
+Type the alphabet backward once a day; it exposes weak fingers.
+Type your own name and address until they are automatic.
+Type a short paragraph with your eyes closed between words.
+Type a paragraph and correct every mistake twice before moving on.
