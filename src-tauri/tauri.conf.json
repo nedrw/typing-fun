@@ -13,9 +13,9 @@
     "windows": [
       {
         "title": "打字训练",
-        "width": 1200,
+        "width": 1040,
         "height": 840,
-        "minWidth": 980,
+        "minWidth": 900,
         "minHeight": 700,
         "center": true
       }

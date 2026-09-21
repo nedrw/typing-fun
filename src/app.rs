@@ -232,6 +232,41 @@ fn decode_text(buffer: &js_sys::ArrayBuffer) -> Option<String> {
         .ok()
 }
 
+/// 按当前来源抽一段文本（不启动练习）：自动接续与「下一段预览」共用。
+fn draw_source_text(all: &[Material], src: &Source, seed: u64) -> String {
+    match src {
+        Source::Lesson(index) => LESSONS[*index].generate(seed),
+        Source::Material {
+            lang,
+            shuangpin,
+            material_id,
+        } => match material_id {
+            Some(id) => all
+                .iter()
+                .find(|m| m.id == *id)
+                .map(|m| {
+                    let target = if m.lang == Lang::Zh {
+                        SEGMENT_ZH
+                    } else {
+                        SEGMENT_EN
+                    };
+                    random_segment(&m.text, m.lang, target, seed)
+                })
+                .unwrap_or_else(|| draw_segment(all, *lang, seed, *shuangpin)),
+            None => draw_segment(all, *lang, seed, *shuangpin),
+        },
+        Source::Test { lang, .. } => draw_segment(all, *lang, seed, false),
+        Source::Shuangpin { material_id, .. } => match material_id {
+            Some(id) => all
+                .iter()
+                .find(|m| m.id == *id)
+                .map(|m| random_segment(&m.text, Lang::Zh, SEGMENT_ZH, seed))
+                .unwrap_or_else(|| draw_segment(all, Lang::Zh, seed, false)),
+            None => draw_segment(all, Lang::Zh, seed, false),
+        },
+    }
+}
+
 /// 从素材池里挑一段。素材池为空时退回到同语言的第一课。
 fn draw_segment(all: &[Material], lang: Lang, seed: u64, shuangpin: bool) -> String {
     let target = if shuangpin || lang == Lang::Zh {
@@ -325,6 +360,10 @@ pub fn App() -> impl IntoView {
     let now = RwSignal::new(js_sys::Date::now());
     // 自动换段后的短提示（时间戳，当前时间超过它就不再显示）
     let advance_note_until = RwSignal::new(0.0f64);
+    // 下一段预览：快打完时预抽并渐显，打完后接上它切换
+    let upcoming = RwSignal::new(None::<String>);
+    // 切换动画的截止时间（时间戳，超过就不再挂 swap 类）
+    let swap_until = RwSignal::new(0.0f64);
     // 火力条：打字蓄力、随时间衰减；爆发强度用最近 2.5 秒的即时速度
     let heat = RwSignal::new(0.0f64);
     // 爆发状态：满格进入，跌破 BURST_EXIT 才退出（滞回）
@@ -414,6 +453,7 @@ pub fn App() -> impl IntoView {
         seed.update(|s| *s = next_seed(*s));
         let lesson = &LESSONS[index];
         let text = lesson.generate(seed.get_untracked());
+        upcoming.set(None);
         // 指法课要求打对当前字符才能前进
         session.set(Session::new(&text, lesson.lang, ErrorMode::StopOnError));
         ime_notice.set(false);
@@ -432,6 +472,7 @@ pub fn App() -> impl IntoView {
     };
 
     let begin = move |text: String, src: Source, limit: Option<u32>| {
+        upcoming.set(None);
         let lang = src.lang();
         let shuangpin = matches!(
             src,
@@ -504,6 +545,7 @@ pub fn App() -> impl IntoView {
 
     // 双拼按键判定：默认从中文素材池随机截一段；指定素材时用该素材
     let begin_shuangpin = move |text: String, secs: Option<u32>, material_id: Option<String>| {
+        upcoming.set(None);
         zh_mode.set(ZhMode::Shuangpin);
         // 面向速度：打错自动补上期望键继续，错误计入正确率
         session.set(Session::shuangpin(&text, ErrorMode::Continue));
@@ -528,19 +570,32 @@ pub fn App() -> impl IntoView {
     };
 
     // ---------- 结束、续段与自动接续 ----------
-    // 按当前来源重新抽一段（素材池 / 指定素材 / 课程 / 测试）
-    let next_segment = move || match source.get_untracked() {
-        Source::Lesson(index) => start_lesson(index),
-        Source::Material {
-            lang,
-            shuangpin,
-            material_id,
-        } => match material_id {
-            Some(id) => start_material(id),
-            None => start_segment(lang, shuangpin, None),
-        },
-        Source::Test { lang, secs } => start_segment(lang, false, Some(secs)),
-        Source::Shuangpin { secs, material_id } => start_shuangpin(secs, material_id),
+    // 预抽下一段（推进种子但不启动）
+    let draw_next = move || -> String {
+        seed.update(|s| *s = next_seed(*s));
+        all_materials
+            .with(|all| draw_source_text(all, &source.get_untracked(), seed.get_untracked()))
+    };
+
+    // 用指定文本启动同来源的下一段
+    let start_with_text = move |text: String, src: Source| match src {
+        Source::Shuangpin { secs, material_id } => begin_shuangpin(text, secs, material_id),
+        src => {
+            let limit = match &src {
+                Source::Test { secs, .. } => Some(*secs),
+                _ => None,
+            };
+            begin(text, src, limit);
+        }
+    };
+
+    // 换一段：优先接上已经预览的那段，没有预览就现抽
+    let next_segment = move || {
+        let text = match upcoming.get_untracked() {
+            Some(text) => text,
+            None => draw_next(),
+        };
+        start_with_text(text, source.get_untracked());
     };
 
     // 把当前这一段写进成绩档案，返回结算页需要的信息
@@ -588,7 +643,9 @@ pub fn App() -> impl IntoView {
     // 非限时练习：一段打完就记账并立刻换下一段继续，不中断节奏
     let advance = move || {
         let _ = record_current();
-        advance_note_until.set(js_sys::Date::now() + 1_200.0);
+        let now_ms = js_sys::Date::now();
+        advance_note_until.set(now_ms + 1_200.0);
+        swap_until.set(now_ms + 360.0);
         next_segment();
     };
 
@@ -624,6 +681,14 @@ pub fn App() -> impl IntoView {
         if let Some(limit) = test_limit.get_untracked() {
             if session.with_untracked(|s| s.stats(now_ms).secs) >= limit as f64 {
                 finish();
+            }
+        } else if upcoming.get_untracked().is_none() {
+            // 快打完时预抽下一段：先在本区空白处渐显，打完无缝接过去
+            let remaining = session.with_untracked(|s| s.len().saturating_sub(s.cursor()));
+            let threshold = if is_zh() { 20 } else { 60 };
+            if remaining > 0 && remaining <= threshold {
+                let text = draw_next();
+                upcoming.set(Some(text));
             }
         }
     }));
@@ -1549,13 +1614,32 @@ pub fn App() -> impl IntoView {
                             <div class="text-box">
                                 <div
                                     node_ref=text_ref
-                                    class=move || match (is_zh(), is_sp()) {
-                                        (_, true) => "text zh sp",
-                                        (true, false) => "text zh",
-                                        _ => "text",
+                                    class=move || {
+                                        let mut class = match (is_zh(), is_sp()) {
+                                            (_, true) => "text zh sp",
+                                            (true, false) => "text zh",
+                                            _ => "text",
+                                        }
+                                        .to_string();
+                                        if now.get() < swap_until.get() {
+                                            class.push_str(" swap");
+                                        }
+                                        class
                                     }
                                 >
                                     {move || if is_sp() { sp_cells() } else { text_spans().into_any() }}
+                                    {move || {
+                                        upcoming
+                                            .get()
+                                            .map(|text| {
+                                                view! {
+                                                    <div class="upcoming">
+                                                        <span class="upcoming-label">"下一段"</span>
+                                                        {text}
+                                                    </div>
+                                                }
+                                            })
+                                    }}
                                 </div>
                                 <button
                                     class="text-refresh"

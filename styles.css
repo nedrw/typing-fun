@@ -85,7 +85,7 @@ button {
     width: 100%;
     box-sizing: border-box;
     padding: 0.6rem 1.5rem 1rem;
-    max-width: 62rem;
+    max-width: 50rem;
     margin: 0 auto;
 }
 
@@ -306,6 +306,11 @@ button {
     .heat .spark {
         display: none;
     }
+
+    .upcoming,
+    .text.swap {
+        animation: none;
+    }
 }
 
 .text {
@@ -332,6 +337,52 @@ button {
 /* 练习时不显示滚动条，靠自动跟随游标定位 */
 .text::-webkit-scrollbar {
     display: none;
+}
+
+/* 下一段预览：快打完时在文本区空白处渐显 */
+.upcoming {
+    margin-top: 0.9rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--line);
+    color: var(--dim);
+    opacity: 0.55;
+    animation: upcoming-in 0.5s ease-out;
+}
+
+.upcoming-label {
+    margin-right: 0.6rem;
+    color: var(--accent);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+}
+
+@keyframes upcoming-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.4rem);
+    }
+
+    to {
+        opacity: 0.55;
+        transform: none;
+    }
+}
+
+/* 切到下一段时的入场动画 */
+.text.swap {
+    animation: swap-in 0.34s ease-out;
+}
+
+@keyframes swap-in {
+    from {
+        opacity: 0.35;
+        transform: translateY(0.7rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 .text-box {
